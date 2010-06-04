@@ -2,6 +2,7 @@
 #include <iostream>
 #include <tr1/unordered_map>
 #include <queue>
+#include <algorithm>
 #include "util.hpp"
 #include "Vector.hpp"
 #include "Rect.hpp"
