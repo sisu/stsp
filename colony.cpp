@@ -65,6 +65,7 @@ void addPheromone(const vector<int>& path, double p)
 double antColony(double(*cost)(const vector<int>&))
 {
 	const int T = 1<<11;
+//	const int T = 1<<9;
 	const int M = 1<<5;
 	const double P = 2e-2;
 
@@ -112,11 +113,12 @@ double antColony(double(*cost)(const vector<int>&))
 			addPheromone(bestPath, 1./best);
 		}
 #if 0
-		addPheromone(bpath, .25*P);
-#endif
+		addPheromone(tmpv[bnum], .25*P);
+#else
 		for(int i=0; i<M; ++i) {
 			addPheromone(tmpv[i], 1./costs[i]);
 		}
+#endif
 
 		for(size_t i=0; i<probab.size(); ++i) {
 			copy(pheromone[i].begin(),pheromone[i].end(),probab[i].begin());

@@ -210,10 +210,10 @@ int main(int argc, char* argv[])
 
 	initDistances();
 
-//	double r = optimize(distanceCost);
 //	double r = antColony(distanceCost);
 //	double r = antColony(distanceCost2);
-	double r = antColony(tspCost);
+	double r = antColony(distanceCost3);
+//	double r = antColony(tspCost);
 	cout<<r<<'\n';
 	cout<<bestPath<<'\n';
 

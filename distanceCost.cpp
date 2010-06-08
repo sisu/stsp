@@ -73,10 +73,39 @@ double distanceCost2(const vector<int>& path)
 	}
 	return r;
 }
-double tspCost(const vector<int>& path)
+double distanceCost3(const vector<int>& path)
 {
 	double r = pathLength(path);
+
+	for(size_t i=0; i<itemFreq.size(); ++i) {
+		double f = itemFreq[i];
+		if (f==0) continue;
+		double d = pathDist(i,path);
+		double md = 25*(1/f-1);
+		if (d<md) continue;
+		r += 5*(d-md);
+	}
 	return r;
+}
+double tspCost(const vector<int>& path)
+{
+//	double r = .5*pow(pathLength(path),1.);
+	double l = pathLength(path);
+	double r = 0;
+	for(size_t i=0; i<ppath.size(); ++i) {
+		const ivec& p = ppath[i];
+		double big=0;
+		for(size_t k=0; k<p.size(); ++k) {
+			double small=1e100;
+			for(size_t j=1; j<path.size(); ++j) {
+				small = min(small, length(pos[path[j]] - pos[p[k]]));
+			}
+			big = max(big, small);
+		}
+		r += big*big;
+	}
+	return r + .1*l;
+	return r / l + .1*l/ppath.size();
 }
 
 
