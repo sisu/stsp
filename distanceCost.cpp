@@ -5,18 +5,23 @@
 #include "util.hpp"
 #include "Vector.hpp"
 #include "Rect.hpp"
+#include "tsp.hpp"
 using namespace std;
 
-extern vector<vector<int> > conn;
-extern vector<vector<int> > purchases;
+typedef vector<int> ivec;
+extern vector<ivec> conn;
+extern vector<ivec> purchases;
 extern vector<Vec2> pos;
-extern vector<int> itemID;
+extern ivec itemID;
+extern int startI, endI;
 
 typedef pair<int,int> IP;
 typedef tr1::unordered_map<IP,double> EdgeDist;
 vector<EdgeDist> edgeDist;
 
 vector<double> itemFreq;
+
+vector<ivec> ppath;
 
 double pathLength(const vector<int>& path)
 {
@@ -43,7 +48,10 @@ double distanceCost(const vector<int>& path)
 	double r = TOTAL_DIST_FACT * pow(pathLength(path),1);
 
 	for(size_t i=0; i<itemFreq.size(); ++i) {
-		r += pathDist(i,path)*itemFreq[i];
+//		r += pathDist(i,path)*itemFreq[i];
+//		double p = 1.6;
+//		r += exp2(p-1)*pathDist(i,path)*pow(itemFreq[i],p);
+		r += pathDist(i,path)*(exp(itemFreq[i])-1);
 //		r += pow(pathDist(i,path),1+itemFreq[i]);
 	}
 	return r;
@@ -64,6 +72,12 @@ double distanceCost2(const vector<int>& path)
 	}
 	return r;
 }
+double tspCost(const vector<int>& path)
+{
+	double r = pathLength(path);
+	return r;
+}
+
 
 vector<vector<pair<IP,double> > > straightEdges;
 
@@ -131,8 +145,24 @@ void genStraightEdges()
 	}
 }
 
+ivec orderToPath(const ivec& v)
+{
+	ivec r = startPath[v[0]];
+//	cout<<"called o2p "<<v<<" ; "<<r<<'\n';
+	for(size_t i=1; i<v.size(); ++i) {
+		int p=v[i-1], c=v[i];
+//		cout<<"o2p "<<" ; "<<v<<" : "<<p<<' '<<c<<" ; "<<itemPath[p][c]<<'\n';
+		r.pop_back();
+		r.insert(r.end(), itemPath[p][c].begin(), itemPath[p][c].end());
+	}
+	r.pop_back();
+	r.insert(r.end(), endPath[v.back()].begin(), endPath[v.back()].end());
+	return r;
+}
+
 void initDistances()
 {
+	cout<<"asd "<<itemID<<'\n';
 	genStraightEdges();
 	edgeDist.resize(itemID.size());
 	for(size_t i=0; i<itemID.size(); ++i) {
@@ -146,4 +176,10 @@ void initDistances()
 	}
 	for(size_t i=0; i<itemFreq.size(); ++i)
 		itemFreq[i] /= purchases.size();
+
+	initTSP();
+	ppath.resize(purchases.size());
+	for(size_t i=0; i<purchases.size(); ++i) {
+		ppath[i] = orderToPath(TSP(purchases[i]));
+	}
 }

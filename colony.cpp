@@ -54,7 +54,8 @@ void addPheromone(const vector<int>& path, double p)
 {
 	for(size_t i=0; i+1<path.size(); ++i) {
 		int a = path[i];
-		int e = find(conn[a].begin(),conn[a].end(),path[i+1]) - conn[a].begin();
+//		int e = find(conn[a].begin(),conn[a].end(),path[i+1]) - conn[a].begin();
+		int e = lower_bound(conn[a].begin(),conn[a].end(),path[i+1]) - conn[a].begin();
 		pheromone[a][e] += p;
 	}
 }
@@ -77,23 +78,25 @@ double antColony(double(*cost)(const vector<int>&))
 	double best = 1e100;
 
 	int prevB = 0;
+	vector<int> tmpv[M];
+	double costs[M];
 	for(int a=0; a<T && a-prevB<T/4; ++a) {
-		vector<int> bpath;
-		vector<int> path;
+		int bnum=0;
 		double bcost=1e100;
 		for(int i=0; i<M; ++i) {
 			fill(used.begin(),used.end(),0);
+			vector<int>& path = tmpv[i];
 			path.clear();
 			dfs(startI, endI, path);
 			reverse(path.begin(),path.end());
 
 //			cout<<"lol path "<<path<<'\n';
 
-			double c = cost(path);
+			double c = costs[i] = cost(path);
 //			cout<<"c "<<c<<'\n';
 			if (c < bcost) {
 				bcost=c;
-				swap(bpath,path);
+				bnum = i;
 			}
 		}
 		for(size_t i=0; i<pheromone.size(); ++i) {
@@ -101,13 +104,19 @@ double antColony(double(*cost)(const vector<int>&))
 		}
 		if (bcost<best) {
 			best=bcost;
-			bestPath = bpath;
+			bestPath = tmpv[bnum];
 			cout<<"new best "<<best<<' '<<bestPath<<'\n';
 			prevB=a;
 		} else {
-			addPheromone(bestPath, .25*P);
+//			addPheromone(bestPath, .25*P);
+			addPheromone(bestPath, 1./best);
 		}
+#if 0
 		addPheromone(bpath, .25*P);
+#endif
+		for(int i=0; i<M; ++i) {
+			addPheromone(tmpv[i], 1./costs[i]);
+		}
 
 		for(size_t i=0; i<probab.size(); ++i) {
 			copy(pheromone[i].begin(),pheromone[i].end(),probab[i].begin());

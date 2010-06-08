@@ -15,6 +15,9 @@
 #include "util.hpp"
 using namespace std;
 
+double antColony(double(*)(const vector<int>&));
+
+
 double W,H;
 
 vector<vector<int> > conn;
@@ -26,119 +29,7 @@ vector<char> onPath;
 
 vector<vector<int> > purchases;
 
-double antColony(double(*)(const vector<int>&));
-
-bool startDFS(int s, int t, vector<int>& out)
-{
-	used[s]=1;
-	if (s==t) {
-		out.push_back(s);
-		return 1;
-	}
-	for(size_t i=0; i<conn[s].size(); ++i) {
-		int x = conn[s][i];
-		if (used[x]) continue;
-		if (startDFS(x, t, out)) {
-			out.push_back(s);
-			return 1;
-		}
-	}
-	return 0;
-}
-bool augmentDFS(int s, vector<int>& out, int no1, int no2)
-{
-	used[s]=1;
-	if (no1<0 && no2<0 && onPath[s]) {
-		out.push_back(s);
-		return 1;
-	}
-	random_shuffle(conn[s].begin(),conn[s].end());
-	for(size_t i=0; i<conn[s].size(); ++i) {
-//		swap(conn[s][i],conn[s][i+rand()%(conn[s].size()-i)]);
-		int x = conn[s][i];
-		if (x==no1 || x==no2) continue;
-		if (used[x]) continue;
-		if (augmentDFS(x, out, -1, -1)) {
-			out.push_back(s);
-			return 1;
-		}
-	}
-	return 0;
-}
-
-double randf()
-{
-	return rand()/(double)RAND_MAX;
-}
-
 vector<int> bestPath;
-template<class F>
-double optimize(F cost)
-{
-	used.resize(pos.size());
-	vector<int> path;
-	assert( startDFS(startI, endI, path) );
-	reverse(path.begin(),path.end());
-
-	bestPath = path;
-	double best = cost(path);
-
-	onPath.resize(pos.size());
-	for(size_t i=0; i<path.size(); ++i)
-		onPath[path[i]] = 1;
-
-	vector<int> augment;
-	vector<int> tmpV;
-	double curC = best;
-
-	for(double t=10; t>.1; t*=.9999) {
-//		cout<<"cur "<<path<<'\n';
-
-		fill(used.begin(),used.end(),0);
-		augment.clear();
-		int s = rand() % (path.size()-1);
-		if (!augmentDFS(path[s], augment, path[s+1], s>0?path[s-1]:-1)) continue;
-
-		int e=0;
-		while(path[e]!=augment[0]) ++e;
-//		cout<<"augment "<<augment<<" ; "<<s<<' '<<e<<'\n';
-		if (e<s)
-			swap(s,e);
-		else
-			reverse(augment.begin(),augment.end());
-
-		tmpV.clear();
-		tmpV.insert(tmpV.end(), path.begin(), path.begin()+s);
-		tmpV.insert(tmpV.end(), augment.begin(), augment.end());
-		tmpV.insert(tmpV.end(), path.begin()+e+1, path.end());
-
-		double c = cost(tmpV);
-		if (c < curC || randf() < exp((c-curC)/t)) {
-			path.swap(tmpV);
-			curC = c;
-
-			if (curC < best) {
-				best=curC;
-				bestPath = path;
-				cout<<"new best "<<best<<" : "<<bestPath<<'\n';
-//				cout<<s<<' '<<e<<'\n';
-
-#if 0
-				for(size_t i=1; i<path.size(); ++i) {
-					int a=path[i-1], b=path[i];
-//					cout<<"trying "<<a<<' '<<b<<'\n';
-					assert(find(conn[a].begin(),conn[a].end(),b)!=conn[a].end());
-				}
-#endif
-			}
-
-			fill(onPath.begin(),onPath.end(),0);
-			for(size_t i=0; i<path.size(); ++i)
-				onPath[path[i]] = 1;
-		}
-	}
-	return best;
-}
 
 struct Commodity {
 	int id;
@@ -148,11 +39,16 @@ vector<Commodity> goods;
 vector<int> itemID;
 
 static int nextID=0;
+static map<string,int> IDMap;
 int getID(const string s)
 {
-	static map<string,int> ID;
-	if (ID.count(s)) return ID[s];
-	return ID[s]=nextID++;
+	if (IDMap.count(s)) return IDMap[s];
+	return IDMap[s]=nextID++;
+}
+int tryGetID(const string s)
+{
+	if (IDMap.count(s)) return IDMap[s];
+	return -1;
 }
 
 void genCorners(Rect r, Vec2 vs[4])
@@ -223,6 +119,9 @@ void genGraph()
 	for(size_t i=0; i<pos.size(); ++i)
 		for(size_t j=0; j<i; ++j)
 			checkedJoin(i, j, bigRects);
+
+	for(size_t i=0; i<conn.size(); ++i)
+		sort(conn[i].begin(),conn[i].end());
 }
 
 void readArea(istream& in)
@@ -283,11 +182,13 @@ void readDB(istream& in)
 	for(int i=0; i<n; ++i) {
 		int k;
 		in>>k;
-		purchases[i].resize(k);
+		purchases[i].reserve(k);
 		string s;
 		for(int j=0; j<k; ++j) {
 			in>>s;
-			purchases[i][j] = getID(s);
+			int id = tryGetID(s);
+			if (id>=0)
+				purchases[i].push_back(id);
 		}
 	}
 
@@ -310,8 +211,9 @@ int main(int argc, char* argv[])
 	initDistances();
 
 //	double r = optimize(distanceCost);
-	double r = antColony(distanceCost);
+//	double r = antColony(distanceCost);
 //	double r = antColony(distanceCost2);
+	double r = antColony(tspCost);
 	cout<<r<<'\n';
 	cout<<bestPath<<'\n';
 
