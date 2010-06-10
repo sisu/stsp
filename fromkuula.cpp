@@ -14,6 +14,7 @@ const double S=10;
 int onum=1;
 void addObs(double x, double y)
 {
+	if (x<=0 || y<=0 || x>=W*W || y>=S*H) return;
 	cout<<'i'<<onum<<' '<<x<<' '<<y<<'\n';
 	++onum;
 }

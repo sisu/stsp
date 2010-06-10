@@ -17,7 +17,9 @@ extern ivec itemID;
 extern int startI, endI;
 
 typedef pair<int,int> IP;
-typedef tr1::unordered_map<IP,double> EdgeDist;
+//typedef tr1::unordered_map<IP,double> EdgeDist;
+typedef vector<double> EdgeDist;
+tr1::unordered_map<IP,int> edgeNums;
 vector<EdgeDist> edgeDist;
 
 vector<double> itemFreq;
@@ -35,7 +37,8 @@ double pathDist(int c, const vector<int>& path)
 {
 	double d=1e100;
 	for(size_t i=1; i<path.size(); ++i)
-		d = min(d, edgeDist[c][IP(path[i-1],path[i])]);
+		d = min(d, edgeDist[c][edgeNums[IP(path[i-1],path[i])]]);
+//		d = min(d, edgeDist[c][IP(path[i-1],path[i])]);
 	return d;
 }
 
@@ -113,7 +116,7 @@ vector<vector<pair<IP,double> > > straightEdges;
 
 EdgeDist getEdgeDists(int s)
 {
-	EdgeDist res;
+	EdgeDist res(edgeNums.size()/2, 1e100);
 	typedef pair<double,int> P;
 	priority_queue<P,vector<P>,greater<P> > q;
 	q.push(P(0,s));
@@ -131,14 +134,18 @@ EdgeDist getEdgeDists(int s)
 			int t = conn[n][i];
 			if (used[t]) continue;
 			IP pp(n,t);
-			if (!res.count(pp) || res[pp]>d) res[pp]=res[IP(t,n)]=d;
+			int num = edgeNums[pp];
+			if (d < res[num]) res[num] = d;
+//			if (!res.count(pp) || res[pp]>d) res[pp]=res[IP(t,n)]=d;
 			q.push(P(d+length(pos[t]-pos[n]), t));
 		}
 #if 1
 		for(size_t i=0; i<straightEdges[n].size(); ++i) {
 			IP e = straightEdges[n][i].first;
 			double dd = d + straightEdges[n][i].second;
-			if (!res.count(e) || res[e]>dd) res[e]=res[IP(e.second,e.first)]=dd;
+//			if (!res.count(e) || res[e]>dd) res[e]=res[IP(e.second,e.first)]=dd;
+			int num = edgeNums[e];
+			if (dd < res[num]) res[num]=dd;
 		}
 #endif
 	}
@@ -176,6 +183,18 @@ void genStraightEdges()
 	}
 	cout<<"edge gen done\n";
 }
+void genEdgeNums()
+{
+	int n=0;
+	for(size_t i=0; i<conn.size(); ++i) {
+		for(size_t j=0; j<conn[i].size(); ++j) {
+			int t=conn[i][j];
+			if (edgeNums.count(IP(i,t))) continue;
+			edgeNums[IP(i,t)] = edgeNums[IP(t,i)] = n++;
+		}
+	}
+//	cout<<"Edges: "<<edgeNums.size()<<'\n';
+}
 
 ivec orderToPath(const ivec& v)
 {
@@ -196,6 +215,7 @@ void initDistances()
 {
 	cout<<"asd "<<itemID<<'\n';
 	genStraightEdges();
+	genEdgeNums();
 	edgeDist.resize(itemID.size());
 	for(size_t i=0; i<itemID.size(); ++i) {
 		edgeDist[i] = getEdgeDists(itemID[i]);
