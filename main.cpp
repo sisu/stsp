@@ -129,7 +129,6 @@ void readArea(istream& in)
 	in>>W>>H;
 	in>>startV.x>>startV.y>>endV.x>>endV.y;
 
-#if 0
 	string s;
 	while(in>>s) {
 		if (isdigit(s[0])) {
@@ -144,7 +143,28 @@ void readArea(istream& in)
 			goods.push_back(c);
 		}
 	}
-#endif
+}
+void readDB(istream& in)
+{
+	string s;
+	while(getline(in,s)) {
+		if (s.empty()) continue;
+		istringstream ss(s);
+		vector<int> v;
+		string a;
+		while(ss>>a) {
+			int x = tryGetID(a);
+			if (x>=0)
+				v.push_back(x);
+		}
+		purchases.push_back(v);
+	}
+}
+void readInput(istream& in)
+{
+	in>>W>>H;
+	in>>startV.x>>startV.y>>endV.x>>endV.y;
+
 	int n;
 	in>>n;
 	rects.resize(n);
@@ -162,24 +182,11 @@ void readArea(istream& in)
 		c.id = getID(s);
 		in>>c.pos.x>>c.pos.y;
 	}
-}
-void readDB(istream& in)
-{
-#if 0
-	string s;
-	while(getline(in,s)) {
-		if (s.empty()) continue;
-		istringstream ss(s);
-		vector<int> v;
-		string a;
-		while(ss>>a) v.push_back(getID(a));
-		purchases.push_back(v);
-	}
-#endif
-	int n;
-	in>>n;
-	purchases.resize(n);
-	for(int i=0; i<n; ++i) {
+
+	int m;
+	in>>m;
+	purchases.resize(m);
+	for(int i=0; i<m; ++i) {
 		int k;
 		in>>k;
 		purchases[i].reserve(k);
@@ -191,7 +198,6 @@ void readDB(istream& in)
 				purchases[i].push_back(id);
 		}
 	}
-
 }
 
 int main(int argc, char* argv[])
@@ -203,12 +209,15 @@ int main(int argc, char* argv[])
 		ifstream db(argv[2]);
 		readDB(db);
 	} else {
-		readArea(cin);
-		readDB(cin);
+		readInput(cin);
 	}
 	genGraph();
 
+	cout<<"Graph generated\n";
+
 	initDistances();
+
+	cout<<"Preprosessing done\n";
 
 //	double r = antColony(distanceCost);
 //	double r = antColony(distanceCost2);

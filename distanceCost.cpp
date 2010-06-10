@@ -147,6 +147,7 @@ EdgeDist getEdgeDists(int s)
 extern vector<Rect> bigRects;
 void genStraightEdges()
 {
+	cout<<"Generating edges from nodes to other edges...\n";
 	// FIXME: O(n^4)...
 	straightEdges.resize(pos.size());
 	for(size_t i=0; i<pos.size(); ++i) {
@@ -173,6 +174,7 @@ void genStraightEdges()
 			}
 		}
 	}
+	cout<<"edge gen done\n";
 }
 
 ivec orderToPath(const ivec& v)
@@ -197,6 +199,7 @@ void initDistances()
 	edgeDist.resize(itemID.size());
 	for(size_t i=0; i<itemID.size(); ++i) {
 		edgeDist[i] = getEdgeDists(itemID[i]);
+		cout<<"distances calculated for "<<i<<" ; "<<edgeDist[i].size()<<'\n';
 	}
 
 	itemFreq.resize(itemID.size());
@@ -207,9 +210,10 @@ void initDistances()
 	for(size_t i=0; i<itemFreq.size(); ++i)
 		itemFreq[i] /= purchases.size();
 
+	/*
 	initTSP();
 	ppath.resize(purchases.size());
 	for(size_t i=0; i<purchases.size(); ++i) {
 		ppath[i] = orderToPath(TSP(purchases[i]));
-	}
+	}*/
 }

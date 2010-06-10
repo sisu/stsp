@@ -21,3 +21,4 @@ set(sources main.cpp colony.cpp distanceCost.cpp tsp.cpp)
 #MESSAGE( STATUS "flags : ${OPENGL_LIBRARY}" )
 
 add_executable(stsp ${sources})
+add_executable(fromkuula fromkuula.cpp)
