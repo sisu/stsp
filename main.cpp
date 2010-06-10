@@ -13,12 +13,14 @@
 #include "Rect.hpp"
 #include "distanceCost.hpp"
 #include "util.hpp"
+#include "Area.hpp"
 using namespace std;
 
 double antColony(double(*)(const vector<int>&));
 
 
-double W,H;
+Area area;
+
 
 vector<vector<int> > conn;
 vector<Vec2> pos;
@@ -31,11 +33,6 @@ vector<vector<int> > purchases;
 
 vector<int> bestPath;
 
-struct Commodity {
-	int id;
-	Vec2 pos;
-};
-vector<Commodity> goods;
 vector<int> itemID;
 
 static int nextID=0;
@@ -61,12 +58,10 @@ void genCorners(Rect r, Vec2 vs[4])
 	vs[3]=Vec2(x1,y2);
 }
 
-vector<Rect> rects;
-
 const double CX=4, CY=4;
 bool outside(Vec2 v)
 {
-	return v.x<CX || v.y<CY || v.x>W-CX || v.y>H-CY;
+	return v.x<CX || v.y<CY || v.x>area.W-CX || v.y>area.H-CY;
 }
 bool hitsAnyRect(Vec2 a, Vec2 b, const vector<Rect>& rects)
 {
@@ -84,10 +79,11 @@ void checkedJoin(int a, int b, const vector<Rect>& rects)
 //		cout<<"conn "<<a<<' '<<b<<" ; "<<pos[a]<<' '<<pos[b]<<'\n';
 	}
 }
-Vec2 startV,endV;
 vector<Rect> bigRects;
 void genGraph()
 {
+	vector<Rect>& rects = area.rects;
+	map<string,Vec2>& items = area.items;
 	bigRects = rects;
 	for(size_t i=0; i<rects.size(); ++i) {
 		Rect& b = bigRects[i];
@@ -99,22 +95,30 @@ void genGraph()
 	}
 
 //	vector<Segment> walls;
-	conn.resize(4*rects.size() + goods.size() + 2);
+	conn.resize(4*rects.size() + items.size() + 2);
 	pos.resize(conn.size());
 	for(size_t i=0; i<rects.size(); ++i) {
 		genCorners(bigRects[i], (&pos[0])+4*i);
 	}
 	size_t s0 = 4*rects.size();
-	itemID.resize(nextID);
+	itemID.resize(items.size());
+	int cur=0;
+	for(map<string,Vec2>::iterator i=items.begin(); i!=items.end(); ++i, ++cur) {
+		int x = s0+cur;
+		pos[x] = i->second;
+		itemID[cur] = x;
+	}
+	/*
 	for(size_t i=0; i<goods.size(); ++i) {
 		Commodity c = goods[i];
 		pos[s0+i] = c.pos;
 		itemID[i] = s0+i;
-	}
-	startI = s0+goods.size();
+	}*/
+
+	startI = s0+items.size();
 	endI = startI+1;
-	pos[startI] = startV;
-	pos[endI] = endV;
+	pos[startI] = area.startV;
+	pos[endI] = area.endV;
 
 	for(size_t i=0; i<pos.size(); ++i)
 		for(size_t j=0; j<i; ++j)
@@ -124,26 +128,6 @@ void genGraph()
 		sort(conn[i].begin(),conn[i].end());
 }
 
-void readArea(istream& in)
-{
-	in>>W>>H;
-	in>>startV.x>>startV.y>>endV.x>>endV.y;
-
-	string s;
-	while(in>>s) {
-		if (isdigit(s[0])) {
-			Rect r;
-			r.x1 = atof(s.c_str());
-			in>>r.y1>>r.x2>>r.y2;
-			rects.push_back(r);
-		} else {
-			Commodity c;
-			c.id = getID(s);
-			in>>c.pos.x>>c.pos.y;
-			goods.push_back(c);
-		}
-	}
-}
 void readDB(istream& in)
 {
 	string s;
@@ -162,26 +146,9 @@ void readDB(istream& in)
 }
 void readInput(istream& in)
 {
-	in>>W>>H;
-	in>>startV.x>>startV.y>>endV.x>>endV.y;
-
-	int n;
-	in>>n;
-	rects.resize(n);
-	for(int i=0; i<n; ++i) {
-		Rect& r=rects[i];
-		in>>r.x1>>r.y1>>r.x2>>r.y2;
-	}
-	int k;
-	in>>k;
-	goods.resize(k);
-	string s;
-	for(int i=0; i<k; ++i) {
-		in>>s;
-		Commodity& c = goods[i];
-		c.id = getID(s);
-		in>>c.pos.x>>c.pos.y;
-	}
+	area.readSimple(in);
+	for(map<string,Vec2>::iterator i=area.items.begin(); i!=area.items.end(); ++i)
+		getID(i->first);
 
 	int m;
 	in>>m;
@@ -205,7 +172,11 @@ int main(int argc, char* argv[])
 	srand(time(0));
 	if (argc>2) {
 		ifstream in(argv[1]);
-		readArea(in);
+//		readArea(in);
+		area.read(in);
+		for(map<string,Vec2>::iterator i=area.items.begin(); i!=area.items.end(); ++i)
+			getID(i->first);
+
 		ifstream db(argv[2]);
 		readDB(db);
 	} else {
@@ -213,11 +184,11 @@ int main(int argc, char* argv[])
 	}
 	genGraph();
 
-	cout<<"Graph generated\n";
+	cout<<"Graph generated "<<conn.size()<<'\n';;
 
 	initDistances();
 
-	cout<<"Preprosessing done\n";
+	cout<<"Preprocessing done\n";
 
 //	double r = antColony(distanceCost);
 //	double r = antColony(distanceCost2);

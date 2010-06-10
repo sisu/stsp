@@ -193,7 +193,7 @@ void genEdgeNums()
 			edgeNums[IP(i,t)] = edgeNums[IP(t,i)] = n++;
 		}
 	}
-//	cout<<"Edges: "<<edgeNums.size()<<'\n';
+	cout<<"Edges: "<<n<<'\n';
 }
 
 ivec orderToPath(const ivec& v)
@@ -219,7 +219,7 @@ void initDistances()
 	edgeDist.resize(itemID.size());
 	for(size_t i=0; i<itemID.size(); ++i) {
 		edgeDist[i] = getEdgeDists(itemID[i]);
-		cout<<"distances calculated for "<<i<<" ; "<<edgeDist[i].size()<<'\n';
+		cout<<"distances calculated for "<<i<<'\n';
 	}
 
 	itemFreq.resize(itemID.size());

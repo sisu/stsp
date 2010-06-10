@@ -16,7 +16,7 @@ add_definitions("-Wall -O2 -g -fno-inline")
 #add_definitions("-Wall -g -Wno-unused-result")
 #add_definitions("-Wall -Wno-unused-result -Os -fomit-frame-pointer -ffast-math")
 
-set(sources main.cpp colony.cpp distanceCost.cpp tsp.cpp)
+set(sources main.cpp colony.cpp distanceCost.cpp tsp.cpp Area.cpp)
 
 #MESSAGE( STATUS "flags : ${OPENGL_LIBRARY}" )
 
