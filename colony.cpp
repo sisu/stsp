@@ -30,6 +30,7 @@ bool dfs(int s, int t, vector<int>& out)
 		out.push_back(s);
 		return 1;
 	}
+//	cout<<"writing to "<<s<<'\n';
 	used[s]=1;
 	double p=0;
 	for(size_t i=0; i<conn[s].size(); ++i)
@@ -62,7 +63,7 @@ void addPheromone(const vector<int>& path, double p)
 
 }
 
-double antColony(double(*cost)(const vector<int>&))
+double antColony(double(*cost)(const vector<int>&), double maxtime)
 {
 	const int T = 1<<11;
 //	const int T = 1<<9;
@@ -81,7 +82,10 @@ double antColony(double(*cost)(const vector<int>&))
 	int prevB = 0;
 	vector<int> tmpv[M];
 	double costs[M];
-	for(int a=0; a<T && a-prevB<T/4; ++a) {
+
+	clock_t start = clock();
+
+	for(int a=0; a<T && a-prevB<T/4 && double(clock()-start)/CLOCKS_PER_SEC < maxtime; ++a) {
 		int bnum=0;
 		double bcost=1e100;
 		for(int i=0; i<M; ++i) {

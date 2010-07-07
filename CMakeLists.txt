@@ -22,3 +22,11 @@ set(sources main.cpp colony.cpp distanceCost.cpp tsp.cpp Area.cpp)
 
 add_executable(stsp ${sources})
 add_executable(fromkuula fromkuula.cpp)
+add_executable(graphgen graphgen.cpp Area.cpp)
+add_executable(pathgen pathgen.cpp)
+
+include_directories("~/concorde/INCLUDE")
+set(concorde_dir /home/fs/sysikask/concorde)
+link_libraries(${concorde_dir}/concorde.a)
+link_libraries(glpk)
+add_executable(solve solve.cpp tspCost.cpp colony.cpp concorde.cpp)

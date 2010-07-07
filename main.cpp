@@ -16,7 +16,7 @@
 #include "Area.hpp"
 using namespace std;
 
-double antColony(double(*)(const vector<int>&));
+double antColony(double(*)(const vector<int>&), double t);
 
 
 Area area;
@@ -172,12 +172,14 @@ int main(int argc, char* argv[])
 	srand(time(0));
 	if (argc>2) {
 		ifstream in(argv[1]);
+		assert(in);
 //		readArea(in);
 		area.read(in);
 		for(map<string,Vec2>::iterator i=area.items.begin(); i!=area.items.end(); ++i)
 			getID(i->first);
 
 		ifstream db(argv[2]);
+		assert(db);
 		readDB(db);
 	} else {
 		readInput(cin);
@@ -192,7 +194,7 @@ int main(int argc, char* argv[])
 
 //	double r = antColony(distanceCost);
 //	double r = antColony(distanceCost2);
-	double r = antColony(distanceCost3);
+	double r = antColony(distanceCost3, 3);
 //	double r = antColony(tspCost);
 	cout<<r<<'\n';
 	cout<<bestPath<<'\n';
