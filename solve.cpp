@@ -51,6 +51,7 @@ void readDB(istream& in)
 		vector<int> v;
 		string a;
 		while(ss>>a) {
+			if (a==";") return;
 			int x = tryGetID(a);
 			if (x>=0)
 				v.push_back(x);
@@ -119,17 +120,18 @@ void readInput(istream& in)
 int main(int argc, char* argv[])
 {
 	srand(time(0));
-	if (argc>2) {
+	if (argc>1) {
 		ifstream in(argv[1]);
 		assert(in);
 		readGraph(in);
+	} else {
+		readGraph(cin);
+	}
+	if (argc > 2) {
 		ifstream db(argv[2]);
 		assert(db);
 		readDB(db);
-	} else {
-		readGraph(cin);
-		readDB(cin);
-	}
+	} else readDB(cin);
 
 	vector<double> probs(purchases.size(), 1./purchases.size());
 	initTSPCost(purchases, probs);
