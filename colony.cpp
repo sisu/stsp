@@ -85,7 +85,8 @@ double antColony(double(*cost)(const vector<int>&), double maxtime)
 
 	clock_t start = clock();
 
-	for(int a=0; a<T && a-prevB<T/4 && double(clock()-start)/CLOCKS_PER_SEC < maxtime; ++a) {
+	int a=0;
+	for(a=0; a<T && a-prevB<T/4 && double(clock()-start)/CLOCKS_PER_SEC < maxtime; ++a) {
 		int bnum=0;
 		double bcost=1e100;
 		for(int i=0; i<M; ++i) {
@@ -128,6 +129,7 @@ double antColony(double(*cost)(const vector<int>&), double maxtime)
 			copy(pheromone[i].begin(),pheromone[i].end(),probab[i].begin());
 		}
 	}
+	cout<<"antcolony ran for "<<a<<" iterations\n";
 
 	return best;
 }

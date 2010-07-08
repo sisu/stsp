@@ -54,7 +54,8 @@ double ConcordeTSP::calc() {
 	int r = CCtsp_init_lp(&tsp, name, -1, NULL, N, dat, K, elist, elens, K, elist, elens, true, ptour, 1e100, pool, NULL, silent, rstate);
 	if (r) cout<<"FAIL\n";
 	CCtsp_cutselect_set_tols(sel, tsp, 1, silent);
-	CCtsp_cutting_loop(tsp, sel, 1, silent, rstate);
+//	CCtsp_cutting_loop(tsp, sel, 1, silent, rstate);
+	CCtsp_subtour_loop(tsp, silent, rstate);
 
 	return tsp->lowerbound - (N-1)*add;
 }

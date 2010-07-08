@@ -2,13 +2,17 @@
 #include <iostream>
 #include "concorde.hpp"
 #include "util.hpp"
+#include "ctsp.hpp"
 using namespace std;
 
 extern vector<vector<double> > dist;
 
+//typedef ConcordeTSP TSP;
+typedef CustomTSP TSP;
+
 namespace {
 
-vector<ConcordeTSP> tsps;
+vector<TSP> tsps;
 
 vector<vector<int> > samples;
 vector<double> probs;
@@ -64,7 +68,7 @@ void initTSPCost(const vector<vector<int> >& ss, const vector<double> ps)
 
 	tsps.resize(ss.size());
 	for(size_t i=0; i<tsps.size(); ++i) {
-		ConcordeTSP& tsp = tsps[i];
+		TSP& tsp = tsps[i];
 		int n = samples[i].size();
 		cout<<"init tsp "<<i<<" : "<<n<<'\n';
 		tsp.dists.resize(n, vector<double>(n));

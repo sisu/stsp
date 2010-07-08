@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
 	for(map<string,Vec2>::iterator i=area.items.begin(); i!=area.items.end(); ++i)
 		cout<<i->first<<'\n';
 	for(size_t i=0; i<conn.size(); ++i) {
-		cout<<conn[i].size()<<'\n';
+		cout<<conn[i].size()<<' '<<pos[i].x<<' '<<pos[i].y<<'\n';
 		for(size_t j=0; j<conn[i].size(); ++j)
 			cout<<conn[i][j]<<' '<<length(pos[i]-pos[conn[i][j]])<<' ';
 		cout<<'\n';

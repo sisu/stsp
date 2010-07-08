@@ -1,13 +1,14 @@
 #ifndef CONCORDE_HPP
 #define CONCORDE_HPP
 
+#include <vector>
+
 extern "C" {
 #define new __new_tmp__
 #include <tsp.h>
 #undef new
 }
 
-#include <vector>
 struct ConcordeTSP {
 	void init();
 	double calc();

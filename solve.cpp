@@ -55,11 +55,13 @@ void readDB(istream& in)
 			if (x>=0)
 				v.push_back(x);
 		}
+		if (v.empty()) continue;
 		purchases.push_back(v);
 	}
 }
 vector<vector<int> > nextP;
 vector<vector<double> > dist;
+vector<Vec2> pos;
 void readGraph(istream& in)
 {
 	int N,K;
@@ -70,8 +72,10 @@ void readGraph(istream& in)
 		getID(name);
 	}
 	conn.resize(N);
+	pos.resize(N);
 	for(int i=0; i<N; ++i) {
-		int k;in>>k;
+		int k;
+		in>>k>>pos[i].x>>pos[i].y;
 		for(int j=0; j<k; ++j) {
 			int t;
 			double d;
@@ -126,18 +130,19 @@ int main(int argc, char* argv[])
 		readGraph(cin);
 		readDB(cin);
 	}
+
 	vector<double> probs(purchases.size(), 1./purchases.size());
 	initTSPCost(purchases, probs);
-	double r = antColony(expectedTotalCost, 5);
+	double r = antColony(expectedTotalCost, 3);
 	cout<<r<<'\n';
 	cout<<bestPath<<'\n';
 
 //	cout<<bestPath.size()<<' ';
-#if 0
+#if 1
 	for(size_t i=0; i<bestPath.size(); ++i) {
 		int k=bestPath[i];
 		cout<<pos[k].x<<' '<<pos[k].y<<' ';
 	}
-#endif
 	cout<<'\n';
+#endif
 }

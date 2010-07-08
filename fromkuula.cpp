@@ -64,13 +64,13 @@ int main(int argc, char* argv[])
 	for(size_t i=0; i<rs.size(); ++i) {
 		Rect r=rs[i];
 		int w=r.x2-r.x1, h=r.y2-r.y1;
-		int a = w/(2*S);
+		int a = w/(3*S);
 		int da = w/(a+1);
 		for(int i=1; i<=a; ++i) {
 			addObs(r.x1+da*i, r.y1-.5*S);
 			addObs(r.x1+da*i, r.y2+.5*S);
 		}
-		int b = h/(2*S);
+		int b = h/(3*S);
 		int db = h/(b+1);
 		for(int i=1; i<=b; ++i) {
 			addObs(r.x1-.5*S, r.y1+db*i);
