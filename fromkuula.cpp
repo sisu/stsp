@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 		for(int y=0; y<H; ++y)
 			for(int x=0; x<W; ++x)
 				if (area[y][x]=='3')
-					addObs(S*x, S*y);
+					addObs(S*(x+.5), S*(y+.5));
 	} else {
 		for(size_t i=0; i<rs.size(); ++i) {
 			Rect r=rs[i];
