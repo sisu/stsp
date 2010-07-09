@@ -14,7 +14,7 @@ const double S=10;
 int onum=1;
 void addObs(double x, double y)
 {
-	if (x<=0 || y<=0 || x>=W*W || y>=S*H) return;
+	if (x<=0 || y<=0 || x>=S*W || y>=S*H) return;
 	cout<<'i'<<onum<<' '<<x<<' '<<y<<'\n';
 	++onum;
 }
@@ -61,20 +61,27 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
-	for(size_t i=0; i<rs.size(); ++i) {
-		Rect r=rs[i];
-		int w=r.x2-r.x1, h=r.y2-r.y1;
-		int a = w/(3*S);
-		int da = w/(a+1);
-		for(int i=1; i<=a; ++i) {
-			addObs(r.x1+da*i, r.y1-.5*S);
-			addObs(r.x1+da*i, r.y2+.5*S);
-		}
-		int b = h/(3*S);
-		int db = h/(b+1);
-		for(int i=1; i<=b; ++i) {
-			addObs(r.x1-.5*S, r.y1+db*i);
-			addObs(r.x2+.5*S, r.y1+db*i);
+	if (argc>1) {
+		for(int y=0; y<H; ++y)
+			for(int x=0; x<W; ++x)
+				if (area[y][x]=='3')
+					addObs(S*x, S*y);
+	} else {
+		for(size_t i=0; i<rs.size(); ++i) {
+			Rect r=rs[i];
+			int w=r.x2-r.x1, h=r.y2-r.y1;
+			int a = w/(3*S);
+			int da = w/(a+1);
+			for(int i=1; i<=a; ++i) {
+				addObs(r.x1+da*i, r.y1-.5*S);
+				addObs(r.x1+da*i, r.y2+.5*S);
+			}
+			int b = h/(3*S);
+			int db = h/(b+1);
+			for(int i=1; i<=b; ++i) {
+				addObs(r.x1-.5*S, r.y1+db*i);
+				addObs(r.x2+.5*S, r.y1+db*i);
+			}
 		}
 	}
 }

@@ -65,6 +65,16 @@ void checkedJoin(int a, int b, const vector<Rect>& rects)
 	}
 }
 vector<Rect> bigRects;
+bool itemsOnly=0;
+bool filterConns=1;
+
+struct DistCmp {
+	int v;
+	bool operator()(int a, int b) const {
+		return length2(pos[v]-pos[a]) < length2(pos[v]-pos[b]);
+	}
+};
+
 void genGraph()
 {
 	vector<Rect>& rects = area.rects;
@@ -89,22 +99,49 @@ void genGraph()
 		pos[x] = i->second;
 		itemID[cur] = x;
 	}
-	size_t s0 = pos.size();
 
-//	vector<Segment> walls;
-	pos.resize(s0 + 4*rects.size());
-	for(size_t i=0; i<rects.size(); ++i) {
-		genCorners(bigRects[i], &pos[s0 + 4*i]);
+	if (!itemsOnly) {
+		size_t s0 = pos.size();
+
+	//	vector<Segment> walls;
+		pos.resize(s0 + 4*rects.size());
+		for(size_t i=0; i<rects.size(); ++i) {
+			genCorners(bigRects[i], &pos[s0 + 4*i]);
+		}
+	//	cout<<"before "<<pos.size()<<'\n';
+		pos.erase(remove_if(pos.begin()+s0, pos.end(), outside), pos.end());
+	//	cout<<"after "<<pos.size()<<'\n';
+
 	}
-//	cout<<"before "<<pos.size()<<'\n';
-	pos.erase(remove_if(pos.begin()+s0, pos.end(), outside), pos.end());
-//	cout<<"after "<<pos.size()<<'\n';
-
 	conn.resize(pos.size());
 
 	for(size_t i=0; i<pos.size(); ++i)
 		for(size_t j=0; j<i; ++j)
 			checkedJoin(i, j, bigRects);
+
+	if (filterConns) {
+		double limit = M_PI / 3;
+		for(size_t i=0; i<conn.size(); ++i) {
+			DistCmp cmp = {i};
+			sort(conn[i].begin(), conn[i].end(), cmp);
+			for(size_t j=0; j<conn[i].size(); ) {
+				Vec2 v = pos[conn[i][j]] - pos[i];
+				double a = atan2(v.y, v.x);
+				bool ok=1;
+				for(size_t k=0; k<j; ++k) {
+					Vec2 u = pos[conn[i][k]] - pos[i];
+					double b = atan2(u.y, u.x);
+					if (fabs(a-b)<limit || fabs(a-b+2*M_PI)<limit || fabs(a-b-2*M_PI)<limit) {
+						ok=0;
+						break;
+					}
+				}
+				if (!ok) {
+					conn[i].erase(conn[i].begin()+j);
+				} else ++j;
+			}
+		}
+	}
 
 	for(size_t i=0; i<conn.size(); ++i)
 		sort(conn[i].begin(),conn[i].end());
@@ -140,6 +177,7 @@ void genDists()
 
 int main(int argc, char* argv[])
 {
+	itemsOnly = filterConns = argc>1;
 	area.read(cin);
 	for(map<string,Vec2>::iterator i=area.items.begin(); i!=area.items.end(); ++i)
 		getID(i->first);
