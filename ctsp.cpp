@@ -35,7 +35,7 @@ double CustomTSP::calc()
 	ivec best = cur;
 	double bdist = pathCost(cur);
 	double cdist = bdist;
-	for(double t=10; t>.1; t*=.99) {
+	for(double t=10; t>.1; t*=.9) {
 		size_t a = 1+rand()%(N-3);
 		size_t b = 1+rand()%(N-3);
 		if (b>=a) ++b;

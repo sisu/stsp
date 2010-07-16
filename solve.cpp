@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
 
 	vector<double> probs(purchases.size(), 1./purchases.size());
 	initTSPCost(purchases, probs);
-	double r = antColony(expectedTotalCost, 3);
+	double r = antColony(expectedTotalCost, 5);
 	cout<<r<<'\n';
 	cout<<bestPath<<'\n';
 
