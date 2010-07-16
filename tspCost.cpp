@@ -3,12 +3,14 @@
 #include "concorde.hpp"
 #include "util.hpp"
 #include "ctsp.hpp"
+#include "glptsp.hpp"
 using namespace std;
 
 extern vector<vector<double> > dist;
 
 //typedef ConcordeTSP TSP;
-typedef CustomTSP TSP;
+//typedef CustomTSP TSP;
+typedef GLPTSP TSP;
 
 namespace {
 
@@ -72,6 +74,9 @@ void initTSPCost(const vector<vector<int> >& ss, const vector<double> ps)
 		int n = samples[i].size();
 		cout<<"init tsp "<<i<<" : "<<n<<'\n';
 		tsp.dists.resize(n, vector<double>(n));
+		for(int j=0; j<n; ++j)
+			for(int k=0; k<j; ++k)
+				tsp.dists[j][k] = tsp.dists[k][j] = dist[samples[i][j]][samples[i][k]];
 		tsp.init();
 	}
 }
