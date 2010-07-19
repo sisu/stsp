@@ -42,7 +42,10 @@ int genSubtours(int n, double* g, LP& lp)
 		for(int i=0; i<n; ++i) conn[i] = g[varnum(a,i)];
 		while(1) {
 			double bc=-1, bi=-1;
-			for(int i=0; i<n; ++i) if (used[i]<0 && conn[i]>bc) bi=i, bc=conn[i];
+			for(int i=0; i<n; ++i) {
+//				cout<<"lol "<<i<<' '<<used.size()<<' '<<conn.size()<<'\n';
+				if (used[i]<0 && conn[i]>bc) bi=i, bc=conn[i];
+			}
 			if (bc < .1) break;
 
 			used[bi] = a;
@@ -57,8 +60,8 @@ int genSubtours(int n, double* g, LP& lp)
 				for(int i=0; i<n; ++i) if (used[i]==a)
 					for(int j=0; j<n; ++j) if (used[j]!=a)
 						cols.push_back(varnum(i,j));
-				cout<<"addining cut "<<cols.size()<<' '<<t<<' '<<a<<' '<<n<<'\n';
-				for(int i=0; i<n; ++i) cout<<used[i]<<' '; cout<<'\n';
+//				cout<<"addining cut "<<cols.size()<<' '<<t<<' '<<a<<' '<<n<<'\n';
+//				for(int i=0; i<n; ++i) cout<<used[i]<<' '; cout<<'\n';
 				lp.addCut(cols.size(), &cols[0], &row[0], 2);
 				break;
 			}

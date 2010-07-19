@@ -16,6 +16,11 @@ private:
 	int* cols;
 	double* row;
 	double* vars;
+
+	double relaxation(int M);
+	double branchAndCut(int M);
+
+	static void callback(glp_tree* tree, void* info);
 };
 
 #endif

@@ -28,6 +28,8 @@ out:
 		print "res: ",$_;
 		print $cli $_;
 	}
+	close($in);
+	close($out);
 	close($pid);
 #       print $s."\n";
 	print "closing conn\n";
@@ -43,12 +45,12 @@ my $sock = new IO::Socket::INET (
 		);
 print "starting loop\n";
 while($cli = $sock->accept) {
-#	handle($cli);
+	handle($cli);
 #	$t = threads->new(\&handle, $cli);
-	if (($c = fork()) != 0) {
-		handle($cli);
-		kill("TERM", $c);
-	}
-	print "asdasd\n";
+#	if (($c = fork()) != 0) {
+#		handle($cli);
+#		kill("TERM", $c);
+#	}
+#	print "asdasd\n";
 }
 close($sock);
