@@ -6,6 +6,8 @@
 #include "lp.hpp"
 
 struct GLPTSP : LP {
+	GLPTSP(): lp(0) {}
+	~GLPTSP();
 	void init();
 	double calc();
 	std::vector<std::vector<double> > dists;
@@ -21,6 +23,8 @@ private:
 	double branchAndCut(int M);
 
 	static void callback(glp_tree* tree, void* info);
+
+	bool first;
 };
 
 #endif

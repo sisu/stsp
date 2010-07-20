@@ -6,6 +6,15 @@ using namespace std;
 
 bool relaxationOnly = 1;
 
+GLPTSP::~GLPTSP()
+{
+	if (!lp) return;
+	delete[] cols;
+	delete[] row;
+	delete[] vars;
+	glp_delete_prob(lp);
+}
+
 void GLPTSP::init()
 {
 	int N = dists.size();
@@ -44,6 +53,8 @@ void GLPTSP::init()
 
 	// TODO: better basis?
 //	glp_std_basis(lp);
+
+	first = 1;
 }
 
 double GLPTSP::calc()
@@ -59,21 +70,40 @@ double GLPTSP::calc()
 	else return branchAndCut(M);
 }
 
+static vector<int> arows;
 double GLPTSP::relaxation(int M)
 {
 	int N = dists.size();
 	glp_smcp parm;
 	glp_init_smcp(&parm);
 	parm.msg_lev = GLP_MSG_ERR;
+	parm.meth = GLP_PRIMAL;
+	parm.presolve = first;
+	first=0;
 
+	arows.clear();
+
+//	bool fst=1;
 	do {
+#if 0
+		if (!fst) {
+			cout<<"reoptimize\n";
+		} else cout<<"fst "<<N<<'\n';
+		fst=0;
+#endif
+
 		int r = glp_simplex(lp, &parm);
 		if (r) {
 			cout<<"FAILED SOLVING: "<<r<<'\n';
 			abort();
 		}
 		for(int i=1; i<=M; ++i) vars[i] = glp_get_col_prim(lp, i);
+		parm.meth = GLP_DUAL;
+
+//		genSubtours(N, vars, *this);
+//		break;
 	} while(genSubtours(N, vars, *this));
+	if (!arows.empty()) glp_del_rows(lp, arows.size(), &arows[0]-1);
 	return glp_get_obj_val(lp);
 }
 double GLPTSP::branchAndCut(int M)
@@ -85,7 +115,7 @@ double GLPTSP::branchAndCut(int M)
 	parm.msg_lev = GLP_MSG_ERR;
 //	parm.presolve = GLP_ON;
 
-#if 0
+#if 1
 	glp_smcp pp;
 	glp_init_smcp(&pp);
 	pp.msg_lev = GLP_MSG_ERR;
@@ -97,11 +127,13 @@ double GLPTSP::branchAndCut(int M)
 #else
 	relaxation(M);
 #endif
+	arows.clear();
 	int r = glp_intopt(lp, &parm);
 	if (r) {
 		cout<<"FAILED SOLVING INTOPT: "<<r<<'\n';
 		abort();
 	}
+	if (!arows.empty()) glp_del_rows(lp, arows.size(), &arows[0]-1);
 	return glp_mip_obj_val(lp);
 }
 
@@ -110,6 +142,7 @@ void GLPTSP::addCut(int n, int* cols, double* row, double low)
 	int r = glp_add_rows(lp, 1);
 	glp_set_mat_row(lp, r, n, cols-1, row-1);
 	glp_set_row_bnds(lp, r, GLP_LO, low, low);
+	arows.push_back(r);
 }
 
 struct GLPWrap : LP {

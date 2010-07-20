@@ -68,7 +68,7 @@ double antColony(double(*cost)(const vector<int>&), double maxtime)
 	const int T = 1<<11;
 //	const int T = 1<<9;
 	const int M = 1<<5;
-	const double P = 2e-2;
+	const double P = 5e-2;
 
 	used.resize(conn.size());
 	pheromone.resize(conn.size());
