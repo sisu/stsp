@@ -13,6 +13,7 @@
 #include "Rect.hpp"
 #include "util.hpp"
 #include "tspCost.hpp"
+#include "glproute.hpp"
 using namespace std;
 
 double antColony(double(*)(const vector<int>&), double time);
@@ -134,8 +135,13 @@ int main(int argc, char* argv[])
 	} else readDB(cin);
 
 	vector<double> probs(purchases.size(), 1./purchases.size());
+#if 1
 	initTSPCost(purchases, probs);
 	double r = antColony(expectedTotalCost, 5);
+#else
+	double r = routeLP(probs);
+#endif
+	cout<<"Final cost "<<exactTotalCost(bestPath)<<'\n';
 	cout<<r<<'\n';
 	cout<<bestPath<<'\n';
 

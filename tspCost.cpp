@@ -54,6 +54,12 @@ double expectedTotalCost(const ivec& path)
 	}
 	return r;
 }
+double exactTotalCost(const ivec& path)
+{
+	for(size_t i=0; i<tsps.size(); ++i)
+		tsps[i].relaxationOnly = 0;
+	return expectedTotalCost(path);
+}
 
 void initTSPCost(const vector<vector<int> >& ss, const vector<double> ps)
 {

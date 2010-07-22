@@ -6,12 +6,14 @@
 #include "lp.hpp"
 
 struct GLPTSP : LP {
-	GLPTSP(): lp(0) {}
+	GLPTSP();
 	~GLPTSP();
 	void init();
 	double calc();
 	std::vector<std::vector<double> > dists;
 	void addCut(int n, int* cols, double* row, double low);
+
+	bool relaxationOnly;
 
 private:
 	glp_prob* lp;

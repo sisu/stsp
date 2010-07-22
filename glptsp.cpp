@@ -4,7 +4,12 @@
 #include <iostream>
 using namespace std;
 
-bool relaxationOnly = 1;
+GLPTSP::GLPTSP()
+{
+	lp = 0;
+	relaxationOnly = 1;
+	first = 0;
+}
 
 GLPTSP::~GLPTSP()
 {
@@ -52,7 +57,7 @@ void GLPTSP::init()
 	}
 
 	// TODO: better basis?
-//	glp_std_basis(lp);
+	glp_std_basis(lp);
 
 	first = 1;
 }
