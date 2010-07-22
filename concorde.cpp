@@ -32,6 +32,8 @@ void ConcordeTSP::init() {
 	for(int i=0; i<N; ++i) ptour[i] = i;
 
 	CCutil_datagroup_perm(N, dat, ptour);
+
+	relaxationOnly = 1;
 }
 
 static char name[] = "tsp";
@@ -56,8 +58,8 @@ double ConcordeTSP::calc() {
 	if (r) cout<<"FAIL\n";
 	CCtsp_cutselect_set_tols(sel, tsp, 1, silent);
 	cout<<"jee "<<N<<'\n';;
-	CCtsp_cutting_loop(tsp, sel, 1, silent, rstate);
-//	CCtsp_subtour_loop(tsp, silent, rstate);
+	if (relaxationOnly) CCtsp_subtour_loop(tsp, silent, rstate);
+	else CCtsp_cutting_loop(tsp, sel, 1, silent, rstate);
 
 	return tsp->lowerbound - (N-1)*add;
 }

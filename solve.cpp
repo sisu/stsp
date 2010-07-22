@@ -135,15 +135,15 @@ int main(int argc, char* argv[])
 	} else readDB(cin);
 
 	vector<double> probs(purchases.size(), 1./purchases.size());
-#if 1
+#if 0
 	initTSPCost(purchases, probs);
 	double r = antColony(expectedTotalCost, 5);
+	cout<<"Final cost "<<exactTotalCost(bestPath)<<'\n';
+	cout<<bestPath<<'\n';
 #else
 	double r = routeLP(probs);
 #endif
-	cout<<"Final cost "<<exactTotalCost(bestPath)<<'\n';
 	cout<<r<<'\n';
-	cout<<bestPath<<'\n';
 
 //	cout<<bestPath.size()<<' ';
 #if 1

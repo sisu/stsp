@@ -4,6 +4,7 @@
 #include "util.hpp"
 #include "ctsp.hpp"
 #include "glptsp.hpp"
+#include "tspCost.hpp"
 using namespace std;
 
 extern vector<vector<double> > dist;
@@ -28,7 +29,7 @@ double expectedTotalCost(const ivec& path)
 	for(size_t i=1; i<path.size(); ++i) {
 		r += dist[path[i-1]][path[i]];
 	}
-	r *= .5;
+	r *= LENGTH_FACTOR;
 
 	vector<double> pdist;
 	for(size_t a=0; a<samples.size(); ++a) {
@@ -54,6 +55,7 @@ double expectedTotalCost(const ivec& path)
 	}
 	return r;
 }
+
 double exactTotalCost(const ivec& path)
 {
 	for(size_t i=0; i<tsps.size(); ++i)

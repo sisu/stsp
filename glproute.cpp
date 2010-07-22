@@ -2,6 +2,7 @@
 #include <vector>
 #include <iostream>
 #include <cstdlib>
+#include "tspCost.hpp"
 using namespace std;
 
 extern vector<vector<double> > dist;
@@ -105,7 +106,7 @@ double routeLP(const vector<double>& probs)
 
 	glp_set_obj_dir(lp, GLP_MIN);
 	for(int i=1; i<=E; ++i)
-		glp_set_obj_coef(lp, i, edists[i]);
+		glp_set_obj_coef(lp, i, edists[i] * LENGTH_FACTOR);
 	for(int i=1; i<=K; ++i) {
 		for(int j=1; j<=E; ++j) {
 			glp_set_obj_coef(lp, E*i + j, edists[j] * probs[i-1]);

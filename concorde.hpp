@@ -14,6 +14,8 @@ struct ConcordeTSP {
 	double calc();
 	std::vector<std::vector<double> > dists;
 
+	bool relaxationOnly;
+
 private:
 	CCtsp_lp* tsp;
 	CCtsp_lpcuts* pool;
