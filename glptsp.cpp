@@ -62,6 +62,7 @@ void GLPTSP::init()
 	first = 1;
 }
 
+static vector<int> arows;
 double GLPTSP::calc()
 {
 	int N = dists.size();
@@ -71,11 +72,14 @@ double GLPTSP::calc()
 		for(int j=0; j<i; ++j)
 			glp_set_obj_coef(lp, ++K, dists[i][j]);
 
-	if (relaxationOnly) return relaxation(M);
-	else return branchAndCut(M);
+	arows.clear();
+	double r=0;
+	if (relaxationOnly) r = relaxation(M);
+	else r = branchAndCut(M);
+	if (!arows.empty()) glp_del_rows(lp, arows.size(), &arows[0]-1);
+	return r;
 }
 
-static vector<int> arows;
 double GLPTSP::relaxation(int M)
 {
 	int N = dists.size();
@@ -85,8 +89,6 @@ double GLPTSP::relaxation(int M)
 	parm.meth = GLP_PRIMAL;
 	parm.presolve = first;
 	first=0;
-
-	arows.clear();
 
 //	bool fst=1;
 	do {
@@ -108,7 +110,6 @@ double GLPTSP::relaxation(int M)
 //		genSubtours(N, vars, *this);
 //		break;
 	} while(genSubtours(N, vars, *this));
-	if (!arows.empty()) glp_del_rows(lp, arows.size(), &arows[0]-1);
 	return glp_get_obj_val(lp);
 }
 double GLPTSP::branchAndCut(int M)
@@ -118,9 +119,10 @@ double GLPTSP::branchAndCut(int M)
 	parm.cb_func = GLPTSP::callback;
 	parm.cb_info = this;
 	parm.msg_lev = GLP_MSG_ERR;
+	parm.tm_lim = 1000;
 //	parm.presolve = GLP_ON;
 
-#if 1
+#if 0
 	glp_smcp pp;
 	glp_init_smcp(&pp);
 	pp.msg_lev = GLP_MSG_ERR;
@@ -130,15 +132,17 @@ double GLPTSP::branchAndCut(int M)
 		abort();
 	}
 #else
-	relaxation(M);
+	double r0 = relaxation(M);
 #endif
-	arows.clear();
 	int r = glp_intopt(lp, &parm);
-	if (r) {
+	if (r==GLP_ETMLIM) {
+		cout<<"time limit reached "<<glp_get_obj_val(lp)<<' '<<r0<<'\n';
+		return glp_get_obj_val(lp);
+	} else if (r) {
 		cout<<"FAILED SOLVING INTOPT: "<<r<<'\n';
 		abort();
 	}
-	if (!arows.empty()) glp_del_rows(lp, arows.size(), &arows[0]-1);
+	cout<<"ratio: "<<r0 / glp_mip_obj_val(lp)<<'\n';
 	return glp_mip_obj_val(lp);
 }
 
