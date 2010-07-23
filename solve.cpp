@@ -63,6 +63,7 @@ void readDB(istream& in)
 }
 vector<vector<int> > nextP;
 vector<vector<double> > dist;
+vector<vector<double> > edists;
 vector<Vec2> pos;
 void readGraph(istream& in)
 {
@@ -75,6 +76,7 @@ void readGraph(istream& in)
 	}
 	conn.resize(N);
 	pos.resize(N);
+	edists.resize(N);
 	for(int i=0; i<N; ++i) {
 		int k;
 		in>>k>>pos[i].x>>pos[i].y;
@@ -83,6 +85,7 @@ void readGraph(istream& in)
 			double d;
 			in>>t>>d;
 			conn[i].push_back(t);
+			edists[i].push_back(d);
 		}
 	}
 	nextP.resize(N, vector<int>(N));
@@ -90,6 +93,20 @@ void readGraph(istream& in)
 	for(int i=0; i<N; ++i)
 		for(int j=0; j<N; ++j)
 			in>>dist[i][j]>>nextP[i][j];
+	if (!in) {
+		cout<<"calculating shortest paths\n";
+		for(int i=0; i<N; ++i)
+			for(int j=0; j<N; ++j)
+				dist[i][j] = 1e100;
+		for(int i=0; i<N; ++i)
+			for(size_t j=0; j<conn[i].size(); ++j)
+				dist[i][conn[i][j]] = edists[i][j];
+		for(int i=0; i<N; ++i)
+			for(int j=0; j<N; ++j)
+				for(int k=0; k<N; ++k)
+					dist[j][k] = min(dist[j][k], dist[j][i]+dist[i][k]);
+		cout<<"shortest paths done\n";
+	}
 	startI = 0;
 	endI = 1;
 }

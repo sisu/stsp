@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <queue>
 #include <cassert>
+#include <cmath>
+#include <iomanip>
 #include "tspCost.hpp"
 using namespace std;
 
@@ -34,8 +36,8 @@ int addDegreeConstraints()
 		for(int j=2; j<N; ++j) {
 			double sum=0;
 			for(size_t k=0; k<enums[j].size(); ++k) {
-				sum += vals[enums[j][k]];
-				if (i>0) sum += vals[E*i + enums[j][k]];
+				int e = enums[j][k];
+				sum += vals[e] + (i>0 ? vals[E*i + e] : 0);
 			}
 			for(size_t k=0; k<enums[j].size(); ++k) {
 				double x = vals[E*i + enums[j][k]];
@@ -73,6 +75,20 @@ int otherNode(int e, int n)
 	return p.first == n ? p.second : p.first;
 }
 
+void dumpGraph(int p=0)
+{
+	int pp = cout.precision();
+	for(int i=1; i<=E; ++i) {
+		double v = vals[p*E + i];
+		if (p) v+=vals[i];
+		if (v<EPS) continue;
+		P p = edges[i];
+		cout<<p.first<<' '<<p.second<<" "<<setprecision(3)<<v<<'\n';
+	}
+//	cout<<resetiosflags(ios_base::precision);
+	cout.precision(pp);
+}
+
 vector<int> used;
 vector<double> csums;
 vector<int> found;
@@ -85,42 +101,86 @@ int addSubtoursSingle(int p)
 	csums.resize(N);
 	vector<int> cur;
 
+	typedef pair<double,int> DP;
+
 	int added=0;
-	for(size_t i=0; i<purchases[p-1].size(); ++i) {
-		int s = purchases[p-1][i];
+	for(size_t i=0; (p>0 && i<purchases[p-1].size()) || (p==0 && (int)i<N); ++i) {
+		int s = p>0 ? purchases[p-1][i] : i;
 		if (used[s]>=0) continue;
+		if (p==0 && i>1) {
+			double csum=0;
+			for(size_t j=0; j<enums[i].size(); ++j) csum += vals[enums[i][j]];
+			if (csum < EPS) continue;
+		}
 		cur.clear();
 		found[s] = s;
 
-		priority_queue<P> q;
-		q.push(P(0,s));
+//		if (p==0 && s>1) cout<<"Trying to find main path subtour "<<s<<'\n';
+
+		priority_queue<DP> q;
+		q.push(DP(0,s));
 		double csum=0;
+		double isum=0;
 		while(!q.empty()) {
-			P pp = q.top();
+			DP pp = q.top();
 			q.pop();
 			int n = pp.second;
 			if (used[n]>=0) continue;
+//			cout<<"popping "<<n<<' '<<pp.first<<' '<<csum<<' '<<isum<<'\n';
 			csum -= pp.first;
+			isum += pp.first;
 			cur.push_back(n);
 
 			used[n] = s;
+			if (p==0 && s==0 && n==1) break;
+			if (p>0 && (n==0 || n==1)) break;
+//			if (p==0) cout<<"lol "<<s<<' '<<n<<' '<<csum<<' '<<isum<<' '<<pp.first<<'\n';
 			for(size_t j=0; j<enums[n].size(); ++j) {
 				int e = enums[n][j];
 				int t = otherNode(e, n);
+				double v = p==0 ? vals[e] : vals[e] + vals[E*p+e];
 				if (used[t]>=0) {
 					if (found[t]!=s)
-						csum += vals[E*p + e] + vals[e];
+						csum += v;
 					continue;
 				}
-				if (found[t]!=s) found[t]=s, csums[t] = 0;
-				csum += vals[E*p + e] + vals[e];
+				if (found[t]!=s) found[t]=s, csums[t] = v;
+				else csums[t] += v;
+				csum += v;
 //				cout<<"adding to csum "<<s<<' '<<csum<<' '<<vals[E*p+e]<<' '<<vals[e]<<'\n';
-				if (csums[t] > .2)
-					q.push(P(csums[t], t));
+//				if (csums[t] > .01) {
+				if (csums[t] > 0) {
+					q.push(DP(csums[t], t));
+//					cout<<"pushing "<<t<<' '<<csums[t]<<'\n';
+				}
 			}
 
-			if (csum < 2 - EPS) {
+//			if (p==0 && s>1) cout<<" asd "<<n<<" : "<<csum<<' '<<isum<<'\n';
+#if 1
+			{
+				double is=0, os=0;
+				for(size_t j=0; j<cur.size(); ++j) {
+					int m = cur[j];
+					for(size_t k=0; k<enums[m].size(); ++k) {
+						int e = enums[m][k];
+						int t = otherNode(e, m);
+						double v = p==0 ? vals[e] : vals[e] + vals[e + p*E];
+						if (used[t]!=s) os += v;
+						else if (t<m) is += v;
+					}
+				}
+				if (fabs(is-isum)>1e-4 || fabs(os-csum)>1e-4) {
+					cout<<p<<' '<<s<<' '<<cur.size()<<' '<<is<<' '<<isum<<' '<<os<<' '<<csum<<'\n';
+					dumpGraph(p);
+				}
+				assert(fabs(is-isum) < 1e-4);
+				assert(fabs(os-csum) < 1e-4);
+			}
+#endif
+
+			if ((p>0 && csum < 2 - EPS) || (p==0 && i<2 && csum < 1-EPS)) {
 				int z=0;
+//				for(size_t k=0; k<cur.size(); ++k) used[cur[k]]=found[cur[k]]=s;
 				for(size_t k=0; k<cur.size(); ++k) {
 					int m = cur[k];
 //					cout<<"adding vars: "<<m<<' '<<enums[m].size()<<'\n';
@@ -129,24 +189,48 @@ int addSubtoursSingle(int p)
 						int t = otherNode(e, m);
 //						cout<<"other: "<<t<<' '<<s<<' '<<found[t]<<'\n';
 						if (used[t]>=0 && found[t]==s) continue;
-						cols[++z] = E*p + e;
-						row[z] = 1;
+						if (p>0) {
+							cols[++z] = E*p + e;
+							row[z] = 1;
+						}
 						cols[++z] = e;
 						row[z] = 1;
 					}
 				}
-//				cout<<"adding subtour cut "<<p<<' '<<cur.size()<<' '<<s<<' '<<z<<' '<<csum<<'\n';
-				double tsum=0;
-				for(int i=1; i<=z; ++i) tsum += vals[cols[i]];
-				cout<<tsum<<'\n';
-
-				assert(z);
+#if 0
+				cout<<" adding subtour cut "<<p<<' '<<cur.size()<<' '<<s<<' '<<z<<' '<<csum<<'\n';
+				for(size_t i=0; i<cur.size(); ++i) cout<<cur[i]<<' ';cout<<'\n';
+#endif
+//				assert(z);
+				if (!z) break;
 				int r = glp_add_rows(lp, 1);
-				glp_set_row_bnds(lp, r, GLP_LO, 2, 0);
+				glp_set_row_bnds(lp, r, GLP_LO, p==0 ? 1 : 2, 0);
 				glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
 				++added;
+			} else if (p==0 && s>1 && 2*isum > (cur.size()-1)*csum + EPS) {
+#if 0
+				int z=0;
+				for(size_t k=0; k<cur.size(); ++k) {
+					int m = cur[k];
+					for(size_t l=0; l<enums[m].size(); ++l) {
+						int e = enums[m][l];
+						int t = otherNode(e, m);
+//						cout<<"other: "<<t<<' '<<s<<' '<<found[t]<<'\n';
+						if (used[t]>=0 && found[t]==s && t<m) continue;
+						cols[++z] = e;
+						row[z] = found[t]==s ? -2 : cur.size()-1;
+					}
+				}
+				cout<<"adding main path subtour cut "<<s<<' '<<cur.size()<<' '<<csum<<' '<<isum<<' '<<z<<'\n';
+
+				int r = glp_add_rows(lp, 1);
+				glp_set_row_bnds(lp, r, GLP_LO, 0, 0);
+				glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
+				++added;
+#endif
 			}
 		}
+//		if (p==0 && s>1) cout<<"nodes explored: "<<cur.size()<<'\n';
 	}
 	if (added) cout<<"added "<<added<<" subtour cuts from "<<p<<'\n';
 	return added;
@@ -262,13 +346,7 @@ double routeLP(const vector<double>& probs)
 			vals[i] = glp_get_col_prim(lp, i);
 	} while(addConstraints());
 
-	for(int i=1; i<=E; ++i) {
-		double v = vals[i];
-		double w = vals[E+i];
-		if (v<EPS && w<EPS) continue;
-		P p = edges[i];
-		cout<<p.first<<' '<<p.second<<" : "<<v<<' '<<w<<'\n';
-	}
+	dumpGraph(1);
 
 	double res = glp_get_obj_val(lp);
 

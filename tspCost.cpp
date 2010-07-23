@@ -72,7 +72,7 @@ void initTSPCost(const vector<vector<int> >& ss, const vector<double> ps)
 		v[0]=0;
 		v[1]=1;
 		for(size_t j=0; j<ss[i].size(); ++j)
-			v[2+j] = 2+ss[i][j];
+			v[2+j] = ss[i][j];
 	}
 	probs = ps;
 
