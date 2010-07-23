@@ -30,7 +30,7 @@ vector<int> bestPath;
 
 vector<int> itemID;
 
-static int nextID=0;
+static int nextID=2;
 static map<string,int> IDMap;
 int getID(const string s)
 {
@@ -121,28 +121,44 @@ void readInput(istream& in)
 int main(int argc, char* argv[])
 {
 	srand(time(0));
-	if (argc>1) {
-		ifstream in(argv[1]);
+	char* mapfile=0;
+	char* dbfile=0;
+	bool lprelaxation = 0;
+	double maxt = 5;
+	for(int i=1; i<argc; ++i) {
+		char* a = argv[i];
+		if (a[0]=='-') {
+			switch(a[1]) {
+				case 'r': lprelaxation=1; break;
+				case 't': maxt = atof(argv[++i]); break;
+			}
+		} else if (!mapfile) mapfile = a;
+		else if (!dbfile) dbfile = a;
+	}
+	if (mapfile) {
+		ifstream in(mapfile);
 		assert(in);
 		readGraph(in);
 	} else {
 		readGraph(cin);
 	}
-	if (argc > 2) {
-		ifstream db(argv[2]);
+	if (dbfile) {
+		ifstream db(dbfile);
 		assert(db);
 		readDB(db);
 	} else readDB(cin);
 
 	vector<double> probs(purchases.size(), 1./purchases.size());
-#if 0
+
+	if (lprelaxation) {
+		double r = routeLP(probs);
+		cout<<r<<'\n';
+		return 0;
+	}
 	initTSPCost(purchases, probs);
-	double r = antColony(expectedTotalCost, 5);
+	double r = antColony(expectedTotalCost, maxt);
 	cout<<"Final cost "<<exactTotalCost(bestPath)<<'\n';
 	cout<<bestPath<<'\n';
-#else
-	double r = routeLP(probs);
-#endif
 	cout<<r<<'\n';
 
 //	cout<<bestPath.size()<<' ';

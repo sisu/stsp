@@ -228,7 +228,7 @@ double routeLP(const vector<double>& probs)
 		int r = glp_add_rows(lp, purchases[i].size());
 		for(size_t j=0; j<purchases[i].size(); ++j, ++r) {
 			int t = purchases[i][j];
-//			cout<<"lol "<<i<<' '<<j<<' '<<t<<' '<<enums[t].size()<<'\n';
+			cout<<"lol "<<i<<' '<<j<<' '<<t<<' '<<enums[t].size()<<'\n';
 			int z=0;
 			for(size_t k=0; k<enums[t].size(); ++k) {
 				cols[++z] = enums[t][k];
@@ -244,6 +244,7 @@ double routeLP(const vector<double>& probs)
 //	parm.msg_lev = GLP_MSG_ERR;
 	parm.meth = GLP_PRIMAL;
 	parm.presolve = 1;
+	parm.msg_lev = GLP_MSG_ERR;
 
 	vals.resize(1 + vs);
 	do {
@@ -255,11 +256,19 @@ double routeLP(const vector<double>& probs)
 		parm.meth = GLP_DUAL;
 		parm.presolve = 0;
 
-		cout<<"tmp result "<<glp_get_obj_val(lp)<<'\n';
+		cout<<"lower bound: "<<glp_get_obj_val(lp)<<'\n';
 
 		for(int i=1; i<=vs; ++i)
 			vals[i] = glp_get_col_prim(lp, i);
 	} while(addConstraints());
+
+	for(int i=1; i<=E; ++i) {
+		double v = vals[i];
+		double w = vals[E+i];
+		if (v<EPS && w<EPS) continue;
+		P p = edges[i];
+		cout<<p.first<<' '<<p.second<<" : "<<v<<' '<<w<<'\n';
+	}
 
 	double res = glp_get_obj_val(lp);
 
