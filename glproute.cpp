@@ -2,6 +2,8 @@
 #include <vector>
 #include <iostream>
 #include <cstdlib>
+#include <queue>
+#include <cassert>
 #include "tspCost.hpp"
 using namespace std;
 
@@ -65,9 +67,103 @@ int addDegreeConstraints()
 	return added;
 }
 
+int otherNode(int e, int n)
+{
+	P p = edges[e];
+	return p.first == n ? p.second : p.first;
+}
+
+vector<int> used;
+vector<double> csums;
+vector<int> found;
+int addSubtoursSingle(int p)
+{
+	used.clear();
+	used.resize(N, -1);
+	found.clear();
+	found.resize(N, -1);
+	csums.resize(N);
+	vector<int> cur;
+
+	int added=0;
+	for(size_t i=0; i<purchases[p-1].size(); ++i) {
+		int s = purchases[p-1][i];
+		if (used[s]>=0) continue;
+		cur.clear();
+		found[s] = s;
+
+		priority_queue<P> q;
+		q.push(P(0,s));
+		double csum=0;
+		while(!q.empty()) {
+			P pp = q.top();
+			q.pop();
+			int n = pp.second;
+			if (used[n]>=0) continue;
+			csum -= pp.first;
+			cur.push_back(n);
+
+			used[n] = s;
+			for(size_t j=0; j<enums[n].size(); ++j) {
+				int e = enums[n][j];
+				int t = otherNode(e, n);
+				if (used[t]>=0) {
+					if (found[t]!=s)
+						csum += vals[E*p + e] + vals[e];
+					continue;
+				}
+				if (found[t]!=s) found[t]=s, csums[t] = 0;
+				csum += vals[E*p + e] + vals[e];
+//				cout<<"adding to csum "<<s<<' '<<csum<<' '<<vals[E*p+e]<<' '<<vals[e]<<'\n';
+				if (csums[t] > .2)
+					q.push(P(csums[t], t));
+			}
+
+			if (csum < 2 - EPS) {
+				int z=0;
+				for(size_t k=0; k<cur.size(); ++k) {
+					int m = cur[k];
+//					cout<<"adding vars: "<<m<<' '<<enums[m].size()<<'\n';
+					for(size_t l=0; l<enums[m].size(); ++l) {
+						int e = enums[m][l];
+						int t = otherNode(e, m);
+//						cout<<"other: "<<t<<' '<<s<<' '<<found[t]<<'\n';
+						if (used[t]>=0 && found[t]==s) continue;
+						cols[++z] = E*p + e;
+						row[z] = 1;
+						cols[++z] = e;
+						row[z] = 1;
+					}
+				}
+//				cout<<"adding subtour cut "<<p<<' '<<cur.size()<<' '<<s<<' '<<z<<' '<<csum<<'\n';
+				double tsum=0;
+				for(int i=1; i<=z; ++i) tsum += vals[cols[i]];
+				cout<<tsum<<'\n';
+
+				assert(z);
+				int r = glp_add_rows(lp, 1);
+				glp_set_row_bnds(lp, r, GLP_LO, 2, 0);
+				glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
+				++added;
+			}
+		}
+	}
+	if (added) cout<<"added "<<added<<" subtour cuts from "<<p<<'\n';
+	return added;
+}
+int addSubtourConstraints()
+{
+	int added = 0;
+	for(int i=1; i<=K; ++i) {
+		added += addSubtoursSingle(i);
+	}
+	return added;
+}
+
 bool addConstraints()
 {
 	if (addDegreeConstraints()) return 1;
+	if (addSubtourConstraints()) return 1;
 	return 0;
 }
 
@@ -89,7 +185,7 @@ double routeLP(const vector<double>& probs)
 			enums[i].push_back(n);
 			enums[t].push_back(n);
 			edges.push_back(P(i,t));
-			cout<<"setting edists "<<edists.size()<<": "<<dist[i][t]<<'\n';
+//			cout<<"setting edists "<<edists.size()<<": "<<dist[i][t]<<'\n';
 			edists.push_back(dist[i][t]);
 		}
 	}
@@ -110,7 +206,7 @@ double routeLP(const vector<double>& probs)
 	for(int i=1; i<=K; ++i) {
 		for(int j=1; j<=E; ++j) {
 			glp_set_obj_coef(lp, E*i + j, edists[j] * probs[i-1]);
-			cout<<"setting coeff "<<i<<' '<<j<<": "<<edists[j]*probs[i-1]<<' '<<edists[j]<<'\n';
+//			cout<<"setting coeff "<<i<<' '<<j<<": "<<edists[j]*probs[i-1]<<' '<<edists[j]<<'\n';
 		}
 	}
 
@@ -132,7 +228,7 @@ double routeLP(const vector<double>& probs)
 		int r = glp_add_rows(lp, purchases[i].size());
 		for(size_t j=0; j<purchases[i].size(); ++j, ++r) {
 			int t = purchases[i][j];
-			cout<<"lol "<<i<<' '<<j<<' '<<t<<' '<<enums[t].size()<<'\n';
+//			cout<<"lol "<<i<<' '<<j<<' '<<t<<' '<<enums[t].size()<<'\n';
 			int z=0;
 			for(size_t k=0; k<enums[t].size(); ++k) {
 				cols[++z] = enums[t][k];
@@ -152,11 +248,14 @@ double routeLP(const vector<double>& probs)
 	vals.resize(1 + vs);
 	do {
 		int r = glp_simplex(lp, &parm);
-		if (r) {
-			cout<<"FAILED SOLVING ROUTE RELAXATION: "<<r<<'\n';
+		if (r || glp_get_status(lp)!=GLP_OPT) {
+			cout<<"FAILED SOLVING ROUTE RELAXATION: "<<r<<' '<<glp_get_status(lp)<<'\n';
 			abort();
 		}
 		parm.meth = GLP_DUAL;
+		parm.presolve = 0;
+
+		cout<<"tmp result "<<glp_get_obj_val(lp)<<'\n';
 
 		for(int i=1; i<=vs; ++i)
 			vals[i] = glp_get_col_prim(lp, i);
