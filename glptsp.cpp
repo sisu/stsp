@@ -131,7 +131,7 @@ double GLPTSP::branchAndCut(int M)
 	parm.cb_func = GLPTSP::callback;
 	parm.cb_info = this;
 	parm.msg_lev = GLP_MSG_ERR;
-	parm.tm_lim = 1000;
+	parm.tm_lim = 2500;
 //	parm.presolve = GLP_ON;
 
 #if 0

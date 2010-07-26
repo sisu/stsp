@@ -253,7 +253,7 @@ int addSubtoursSingle(int p)
 int addSubtourConstraints()
 {
 	int added = 0;
-	for(int i=1; i<=K; ++i) {
+	for(int i=0; i<=K; ++i) {
 		added += addSubtoursSingle(i);
 	}
 	return added;

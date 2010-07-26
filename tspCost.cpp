@@ -36,6 +36,7 @@ double expectedTotalCost(const ivec& path)
 		int a = path[i-1], b = path[i];
 		int n = lower_bound(conn[a].begin(),conn[a].end(),b)-conn[a].begin();
 		r += edgeDist[a][n];
+//		if (final) cout<<"lol "<<a<<' '<<b<<' '<<n<<' '<<edgeDist[a][n]<<'\n';
 	}
 	if (final) cout<<path<<'\n'<<"length cost "<<r<<'\n';
 	r *= LENGTH_FACTOR;
@@ -53,7 +54,7 @@ double expectedTotalCost(const ivec& path)
 			for(size_t j=0; j<path.size(); ++j)
 				d = min(d, dist[a][path[j]]);
 			pdist[i] = d;
-			if (final) cout<<"pdist "<<k<<' '<<a<<": "<<d<<'\n';
+//			if (final) cout<<"pdist "<<k<<' '<<a<<": "<<d<<'\n';
 		}
 
 		for(int i=0; i<n; ++i)
