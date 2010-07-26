@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <iostream>
+#include <cassert>
 #include "Vector.hpp"
 #include "util.hpp"
 using namespace std;
@@ -11,6 +12,7 @@ using namespace std;
 extern vector<vector<int> > conn;
 extern int startI,endI;
 extern vector<int> bestPath;
+extern bool singleDir;
 
 namespace {
 
@@ -24,28 +26,31 @@ double randf()
 	return rand()/(double)RAND_MAX;
 }
 
-bool dfs(int s, int t, vector<int>& out)
+bool dfs(int s, int t, vector<int>& out, int from)
 {
 	if (s==t) {
 		out.push_back(s);
 		return 1;
 	}
 //	cout<<"writing to "<<s<<'\n';
-	used[s]=1;
+	++used[s];
 	double p=0;
-	for(size_t i=0; i<conn[s].size(); ++i)
-		if (!used[conn[s][i]]) p += probab[s][i];
+	for(size_t i=0; i<conn[s].size(); ++i) {
+		int t = conn[s][i];
+		if (!used[t] || (!singleDir && used[t]==1 && conn[s][i]==from))
+			p += probab[s][i];
+	}
 	double r = randf() * p;
 	for(size_t i=0; i<conn[s].size(); ++i) {
 		int x = conn[s][i];
-		if (used[x]) continue;
+		if (used[x] && (singleDir || used[x]>1 || conn[s][i]!=from)) continue;
 		r -= probab[s][i];
 		if (r>0) continue;
-		if (dfs(x, t, out)) {
+		if (dfs(x, t, out, s)) {
 			out.push_back(s);
 			return 1;
 		} else {
-			return dfs(s,t,out);
+			return dfs(s,t,out,from);
 		}
 	}
 	return 0;
@@ -57,6 +62,7 @@ void addPheromone(const vector<int>& path, double p)
 		int a = path[i];
 //		int e = find(conn[a].begin(),conn[a].end(),path[i+1]) - conn[a].begin();
 		int e = lower_bound(conn[a].begin(),conn[a].end(),path[i+1]) - conn[a].begin();
+		assert(e < (int)conn[a].size());
 		pheromone[a][e] += p;
 	}
 }
@@ -93,7 +99,7 @@ double antColony(double(*cost)(const vector<int>&), double maxtime)
 			fill(used.begin(),used.end(),0);
 			vector<int>& path = tmpv[i];
 			path.clear();
-			dfs(startI, endI, path);
+			dfs(startI, endI, path, -1);
 			reverse(path.begin(),path.end());
 
 //			cout<<"lol path "<<path<<'\n';

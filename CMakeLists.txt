@@ -20,10 +20,10 @@ set(sources main.cpp colony.cpp distanceCost.cpp tsp.cpp Area.cpp)
 
 #MESSAGE( STATUS "flags : ${OPENGL_LIBRARY}" )
 
-add_executable(stsp ${sources})
+#add_executable(stsp ${sources})
 add_executable(fromkuula fromkuula.cpp)
 add_executable(graphgen graphgen.cpp Area.cpp)
-add_executable(decompose decompose.cpp Area.cpp)
+#add_executable(decompose decompose.cpp Area.cpp)
 add_executable(pathgen pathgen.cpp)
 
 set(concorde_dir "$ENV{HOME}/concorde")

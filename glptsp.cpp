@@ -61,6 +61,17 @@ void GLPTSP::init()
 
 	first = 1;
 }
+void GLPTSP::reset()
+{
+	int N = dists.size();
+	int M = N*(N-1)/2;
+	for(int i=0; i<M; ++i) {
+//		glp_set_col_kind(lp, 1+i, GLP_BV);
+		if (i==0) glp_set_col_bnds(lp, 1+i, GLP_FX, 1, 1);
+		else if (relaxationOnly) glp_set_col_bnds(lp, 1+i, GLP_DB, 0, 1);
+		else glp_set_col_kind(lp, 1+i, GLP_BV);
+	}
+}
 
 static vector<int> arows;
 double GLPTSP::calc()
@@ -106,6 +117,7 @@ double GLPTSP::relaxation(int M)
 		}
 		for(int i=1; i<=M; ++i) vars[i] = glp_get_col_prim(lp, i);
 		parm.meth = GLP_DUAL;
+		parm.presolve = 0;
 
 //		genSubtours(N, vars, *this);
 //		break;

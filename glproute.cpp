@@ -9,10 +9,11 @@
 #include "tspCost.hpp"
 using namespace std;
 
-extern vector<vector<double> > dist;
+extern vector<vector<double> > edgeDist;
 extern vector<vector<int> > conn;
 extern vector<vector<int> > purchases;
 extern bool robustOpt;
+extern bool singleDir;
 
 namespace {
 
@@ -33,13 +34,26 @@ const double EPS = 1e-6;
 int addDegreeConstraints()
 {
 	int added=0;
-	for(int i=0; i<=K; ++i) {
+	for(int i=0; i<=0; ++i) {
 		for(int j=2; j<N; ++j) {
 			double sum=0;
 			for(size_t k=0; k<enums[j].size(); ++k) {
 				int e = enums[j][k];
 				sum += vals[e] + (i>0 ? vals[E*i + e] : 0);
 			}
+			if (singleDir && sum > 2+EPS) {
+				int z=0;
+				for(size_t l=0; l<enums[j].size(); ++l) {
+					int n = enums[j][l];
+					cols[++z] = n;
+					row[z] = 1;
+				}
+				int r = glp_add_rows(lp, 1);
+				glp_set_row_bnds(lp, r, GLP_UP, 0, 2);
+				glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
+				++added;
+			}
+			if (!singleDir) continue;
 			for(size_t k=0; k<enums[j].size(); ++k) {
 				double x = vals[E*i + enums[j][k]];
 				double xx = vals[enums[j][k]];
@@ -157,7 +171,7 @@ int addSubtoursSingle(int p)
 			}
 
 //			if (p==0 && s>1) cout<<" asd "<<n<<" : "<<csum<<' '<<isum<<'\n';
-#if 1
+#if 0
 			{
 				double is=0, os=0;
 				for(size_t j=0; j<cur.size(); ++j) {
@@ -271,7 +285,7 @@ double routeLP(const vector<double>& probs)
 			enums[t].push_back(n);
 			edges.push_back(P(i,t));
 //			cout<<"setting edists "<<edists.size()<<": "<<dist[i][t]<<'\n';
-			edists.push_back(dist[i][t]);
+			edists.push_back(edgeDist[i][j]);
 		}
 	}
 	E = edges.size() - 1;
@@ -279,7 +293,7 @@ double routeLP(const vector<double>& probs)
 	int vs = E*(K+1);
 	glp_add_cols(lp, vs + robustOpt);
 	for(int i=1; i<=vs; ++i) {
-		glp_set_col_bnds(lp, i, GLP_DB, 0, 1);
+		glp_set_col_bnds(lp, i, GLP_DB, 0, singleDir && i<=E ? 1 : 2);
 	}
 
 	cols.resize(vs+1);
@@ -287,12 +301,13 @@ double routeLP(const vector<double>& probs)
 	row.resize(vs+1, 1);
 
 	glp_set_obj_dir(lp, GLP_MIN);
-	for(int i=1; i<=E; ++i)
+	for(int i=1; i<=E; ++i) {
 		glp_set_obj_coef(lp, i, edists[i] * LENGTH_FACTOR);
+		cout<<"lol "<<edges[i].first<<' '<<edges[i].second<<' '<<edists[i] * LENGTH_FACTOR<<'\n';
+	}
 	if (robustOpt) {
 		glp_set_col_bnds(lp, 1+vs, GLP_LO, 0, 0);
 		glp_set_obj_coef(lp, 1+vs, 1);
-#if 1
 		int r = glp_add_rows(lp, K);
 		for(int i=0; i<K; ++i, ++r) {
 			int z=0;
@@ -304,11 +319,10 @@ double routeLP(const vector<double>& probs)
 			}
 			cols[++z] = 1+vs;
 			row[z] = 1;
-			cout<<"asd "<<i<<' '<<z<<'\n';
+//			cout<<"asd "<<i<<' '<<z<<'\n';
 			glp_set_row_bnds(lp, r, GLP_LO, 0, 0);
 			glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
 		}
-#endif
 	} else {
 		for(int i=1; i<=K; ++i) {
 			for(int j=1; j<=E; ++j) {
@@ -318,7 +332,6 @@ double routeLP(const vector<double>& probs)
 		}
 	}
 
-#if 1
 	{
 		// Bounds for start and end nodes
 		int r = glp_add_rows(lp, 2);
@@ -332,11 +345,9 @@ double routeLP(const vector<double>& probs)
 			glp_set_mat_row(lp, r, enums[i].size(), &cols[0], &row[0]);
 		}
 	}
-#endif
 
 	cout<<"vars: "<<vs<<" ; "<<E<<' '<<K<<'\n';
 
-#if 1
 	for(int i=0; i<K; ++i) {
 		int r = glp_add_rows(lp, purchases[i].size());
 		for(size_t j=0; j<purchases[i].size(); ++j, ++r) {
@@ -353,7 +364,6 @@ double routeLP(const vector<double>& probs)
 			glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
 		}
 	}
-#endif
 
 //	glp_write_lp(lp, 0, "/dev/stdout");
 
@@ -361,7 +371,7 @@ double routeLP(const vector<double>& probs)
 	glp_init_smcp(&parm);
 	parm.meth = GLP_PRIMAL;
 	parm.presolve = 1;
-//	parm.msg_lev = GLP_MSG_ERR;
+	parm.msg_lev = GLP_MSG_ERR;
 
 	vals.resize(1 + vs);
 	do {

@@ -19,6 +19,7 @@ using namespace std;
 double antColony(double(*)(const vector<int>&), double time);
 
 bool robustOpt = 0;
+bool singleDir = 0;
 
 vector<vector<int> > conn;
 int startI, endI;
@@ -65,7 +66,7 @@ void readDB(istream& in)
 }
 vector<vector<int> > nextP;
 vector<vector<double> > dist;
-vector<vector<double> > edists;
+vector<vector<double> > edgeDist;
 vector<Vec2> pos;
 void readGraph(istream& in)
 {
@@ -78,7 +79,7 @@ void readGraph(istream& in)
 	}
 	conn.resize(N);
 	pos.resize(N);
-	edists.resize(N);
+	edgeDist.resize(N);
 	for(int i=0; i<N; ++i) {
 		int k;
 		in>>k>>pos[i].x>>pos[i].y;
@@ -87,7 +88,9 @@ void readGraph(istream& in)
 			double d;
 			in>>t>>d;
 			conn[i].push_back(t);
-			edists[i].push_back(d);
+			edgeDist[i].push_back(d);
+			if (i<t) cout<<i<<' '<<t<<' '<<d<<'\n';
+//			cout<<"edist "<<i<<' '<<d<<'\n';
 		}
 	}
 	nextP.resize(N, vector<int>(N));
@@ -100,9 +103,12 @@ void readGraph(istream& in)
 		for(int i=0; i<N; ++i)
 			for(int j=0; j<N; ++j)
 				dist[i][j] = 1e100;
-		for(int i=0; i<N; ++i)
+		for(int i=0; i<N; ++i) {
 			for(size_t j=0; j<conn[i].size(); ++j)
-				dist[i][conn[i][j]] = edists[i][j];
+				dist[i][conn[i][j]] = edgeDist[i][j];
+		}
+		for(int i=0; i<N; ++i)
+			dist[i][i] = 0;
 		for(int i=0; i<N; ++i)
 			for(int j=0; j<N; ++j)
 				for(int k=0; k<N; ++k)
@@ -151,6 +157,7 @@ int main(int argc, char* argv[])
 				case 'l': lprelaxation=1; break;
 				case 'r': robustOpt=1; break;
 				case 't': maxt = atof(argv[++i]); break;
+				case 's': singleDir=1; break;
 			}
 		} else if (!mapfile) mapfile = a;
 		else if (!dbfile) dbfile = a;
@@ -172,12 +179,12 @@ int main(int argc, char* argv[])
 
 	if (lprelaxation) {
 		double r = routeLP(probs);
-		cout<<r<<'\n';
+		cout<<"Relaxation result: "<<r<<'\n';
 		return 0;
 	}
 	initTSPCost(purchases, probs);
 	double r = antColony(expectedTotalCost, maxt);
-	cout<<"Final cost "<<exactTotalCost(bestPath)<<'\n';
+	cout<<"Final cost: "<<exactTotalCost(bestPath)<<'\n';
 	cout<<bestPath<<'\n';
 	cout<<r<<'\n';
 

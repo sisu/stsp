@@ -1,5 +1,6 @@
 #include <vector>
 #include <iostream>
+#include <algorithm>
 #include "concorde.hpp"
 #include "util.hpp"
 #include "ctsp.hpp"
@@ -8,6 +9,8 @@
 using namespace std;
 
 extern vector<vector<double> > dist;
+extern vector<vector<double> > edgeDist;
+extern vector<vector<int> > conn;
 extern bool robustOpt;
 
 //typedef ConcordeTSP TSP;
@@ -21,6 +24,7 @@ vector<TSP> tsps;
 vector<vector<int> > samples;
 vector<double> probs;
 
+bool final=0;
 }
 
 typedef vector<int> ivec;
@@ -28,15 +32,19 @@ double expectedTotalCost(const ivec& path)
 {
 	double r=0;
 	for(size_t i=1; i<path.size(); ++i) {
-		r += dist[path[i-1]][path[i]];
+//		r += dist[path[i-1]][path[i]];
+		int a = path[i-1], b = path[i];
+		int n = lower_bound(conn[a].begin(),conn[a].end(),b)-conn[a].begin();
+		r += edgeDist[a][n];
 	}
+	if (final) cout<<path<<'\n'<<"length cost "<<r<<'\n';
 	r *= LENGTH_FACTOR;
 
 	double rr=0;
 
 	vector<double> pdist;
-	for(size_t a=0; a<samples.size(); ++a) {
-		vector<int>& v = samples[a];
+	for(size_t k=0; k<samples.size(); ++k) {
+		vector<int>& v = samples[k];
 		int n = v.size();
 		pdist.resize(n);
 		for(int i=0; i<n; ++i) {
@@ -45,18 +53,21 @@ double expectedTotalCost(const ivec& path)
 			for(size_t j=0; j<path.size(); ++j)
 				d = min(d, dist[a][path[j]]);
 			pdist[i] = d;
+			if (final) cout<<"pdist "<<k<<' '<<a<<": "<<d<<'\n';
 		}
 
 		for(int i=0; i<n; ++i)
 			for(int j=0; j<i; ++j) {
 				int x=v[i], y=v[j];
 //				cout<<"asdasd "<<tsps[a].dists<<'\n';
-				tsps[a].dists[i][j] = tsps[a].dists[j][i] = min(dist[x][y], pdist[i]+pdist[j]);
+				tsps[k].dists[i][j] = tsps[k].dists[j][i] = min(dist[x][y], pdist[i]+pdist[j]);
 			}
 
-		double cr = probs[a] * tsps[a].calc();
+		double cr = tsps[k].calc();
 		if (robustOpt) rr = max(rr, cr);
-		else rr += cr;
+		else rr += probs[k] * cr;
+
+		if (final) cout<<"tsp cost "<<k<<": "<<cr<<'\n';
 	}
 	r += rr;
 	return r;
@@ -64,8 +75,11 @@ double expectedTotalCost(const ivec& path)
 
 double exactTotalCost(const ivec& path)
 {
-	for(size_t i=0; i<tsps.size(); ++i)
+	final=1;
+	for(size_t i=0; i<tsps.size(); ++i) {
 		tsps[i].relaxationOnly = 0;
+		tsps[i].reset();
+	}
 	return expectedTotalCost(path);
 }
 
@@ -87,6 +101,7 @@ void initTSPCost(const vector<vector<int> >& ss, const vector<double> ps)
 		TSP& tsp = tsps[i];
 		int n = samples[i].size();
 		cout<<"init tsp "<<i<<" : "<<n<<'\n';
+//		for(int j=0; j<n; ++j) cout<<samples[i][j]<<' ';cout<<'\n';
 		tsp.dists.resize(n, vector<double>(n));
 		for(int j=0; j<n; ++j)
 			for(int k=0; k<j; ++k)

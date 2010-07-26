@@ -9,6 +9,7 @@ struct GLPTSP : LP {
 	GLPTSP();
 	~GLPTSP();
 	void init();
+	void reset();
 	double calc();
 	std::vector<std::vector<double> > dists;
 	void addCut(int n, int* cols, double* row, double low);
