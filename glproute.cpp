@@ -12,6 +12,7 @@ using namespace std;
 extern vector<vector<double> > dist;
 extern vector<vector<int> > conn;
 extern vector<vector<int> > purchases;
+extern bool robustOpt;
 
 namespace {
 
@@ -276,10 +277,11 @@ double routeLP(const vector<double>& probs)
 	E = edges.size() - 1;
 	lp = glp_create_prob();
 	int vs = E*(K+1);
-	glp_add_cols(lp, vs);
+	glp_add_cols(lp, vs + robustOpt);
 	for(int i=1; i<=vs; ++i) {
 		glp_set_col_bnds(lp, i, GLP_DB, 0, 1);
 	}
+
 	cols.resize(vs+1);
 	row.clear();
 	row.resize(vs+1, 1);
@@ -287,48 +289,79 @@ double routeLP(const vector<double>& probs)
 	glp_set_obj_dir(lp, GLP_MIN);
 	for(int i=1; i<=E; ++i)
 		glp_set_obj_coef(lp, i, edists[i] * LENGTH_FACTOR);
-	for(int i=1; i<=K; ++i) {
-		for(int j=1; j<=E; ++j) {
-			glp_set_obj_coef(lp, E*i + j, edists[j] * probs[i-1]);
-//			cout<<"setting coeff "<<i<<' '<<j<<": "<<edists[j]*probs[i-1]<<' '<<edists[j]<<'\n';
+	if (robustOpt) {
+		glp_set_col_bnds(lp, 1+vs, GLP_LO, 0, 0);
+		glp_set_obj_coef(lp, 1+vs, 1);
+#if 1
+		int r = glp_add_rows(lp, K);
+		for(int i=0; i<K; ++i, ++r) {
+			int z=0;
+			for(int j=1; j<=E; ++j) {
+				cols[++z] = E*(1+i) + j;
+//				row[z] = -edists[j] * probs[i];
+				row[z] = -edists[j];
+//				cout<<"k "<<i<<' '<<j<<' '<<cols[z]<<'\n';
+			}
+			cols[++z] = 1+vs;
+			row[z] = 1;
+			cout<<"asd "<<i<<' '<<z<<'\n';
+			glp_set_row_bnds(lp, r, GLP_LO, 0, 0);
+			glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
+		}
+#endif
+	} else {
+		for(int i=1; i<=K; ++i) {
+			for(int j=1; j<=E; ++j) {
+				glp_set_obj_coef(lp, E*i + j, edists[j] * probs[i-1]);
+	//			cout<<"setting coeff "<<i<<' '<<j<<": "<<edists[j]*probs[i-1]<<' '<<edists[j]<<'\n';
+			}
 		}
 	}
 
+#if 1
 	{
 		// Bounds for start and end nodes
 		int r = glp_add_rows(lp, 2);
 		for(int i=0; i<2; ++i, ++r) {
 			for(size_t k=0; k<enums[i].size(); ++k) {
 				cols[1+k] = enums[i][k];
+				row[1+k] = 1;
+//				cout<<"v "<<i<<' '<<k<<' '<<enums[i][k]<<'\n';
 			}
 			glp_set_row_bnds(lp, r, GLP_FX, 1, 1);
 			glp_set_mat_row(lp, r, enums[i].size(), &cols[0], &row[0]);
 		}
 	}
+#endif
 
 	cout<<"vars: "<<vs<<" ; "<<E<<' '<<K<<'\n';
 
+#if 1
 	for(int i=0; i<K; ++i) {
 		int r = glp_add_rows(lp, purchases[i].size());
 		for(size_t j=0; j<purchases[i].size(); ++j, ++r) {
 			int t = purchases[i][j];
-			cout<<"lol "<<i<<' '<<j<<' '<<t<<' '<<enums[t].size()<<'\n';
+//			cout<<"lol "<<i<<' '<<j<<' '<<t<<' '<<enums[t].size()<<'\n';
 			int z=0;
 			for(size_t k=0; k<enums[t].size(); ++k) {
 				cols[++z] = enums[t][k];
+				row[z] = 1;
 				cols[++z] = enums[t][k] + E*(1+i);
+				row[z] = 1;
 			}
 			glp_set_row_bnds(lp, r, GLP_LO, 2, 0);
 			glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
 		}
 	}
+#endif
+
+//	glp_write_lp(lp, 0, "/dev/stdout");
 
 	glp_smcp parm;
 	glp_init_smcp(&parm);
-//	parm.msg_lev = GLP_MSG_ERR;
 	parm.meth = GLP_PRIMAL;
 	parm.presolve = 1;
-	parm.msg_lev = GLP_MSG_ERR;
+//	parm.msg_lev = GLP_MSG_ERR;
 
 	vals.resize(1 + vs);
 	do {

@@ -8,6 +8,7 @@
 using namespace std;
 
 extern vector<vector<double> > dist;
+extern bool robustOpt;
 
 //typedef ConcordeTSP TSP;
 //typedef CustomTSP TSP;
@@ -31,6 +32,8 @@ double expectedTotalCost(const ivec& path)
 	}
 	r *= LENGTH_FACTOR;
 
+	double rr=0;
+
 	vector<double> pdist;
 	for(size_t a=0; a<samples.size(); ++a) {
 		vector<int>& v = samples[a];
@@ -51,8 +54,11 @@ double expectedTotalCost(const ivec& path)
 				tsps[a].dists[i][j] = tsps[a].dists[j][i] = min(dist[x][y], pdist[i]+pdist[j]);
 			}
 
-		r += probs[a] * tsps[a].calc();
+		double cr = probs[a] * tsps[a].calc();
+		if (robustOpt) rr = max(rr, cr);
+		else rr += cr;
 	}
+	r += rr;
 	return r;
 }
 

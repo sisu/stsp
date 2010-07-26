@@ -18,6 +18,8 @@ using namespace std;
 
 double antColony(double(*)(const vector<int>&), double time);
 
+bool robustOpt = 0;
+
 vector<vector<int> > conn;
 int startI, endI;
 
@@ -146,7 +148,8 @@ int main(int argc, char* argv[])
 		char* a = argv[i];
 		if (a[0]=='-') {
 			switch(a[1]) {
-				case 'r': lprelaxation=1; break;
+				case 'l': lprelaxation=1; break;
+				case 'r': robustOpt=1; break;
 				case 't': maxt = atof(argv[++i]); break;
 			}
 		} else if (!mapfile) mapfile = a;
