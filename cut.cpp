@@ -40,6 +40,8 @@ int genSubtours(int n, double* g, LP& lp)
 		if (used[a]>=0) continue;
 		used[a]=a;
 		for(int i=0; i<n; ++i) conn[i] = g[varnum(a,i)];
+
+		double strongestCut=-1;
 		while(1) {
 			double bc=-1, bi=-1;
 			for(int i=0; i<n; ++i) {
@@ -55,17 +57,18 @@ int genSubtours(int n, double* g, LP& lp)
 			bool na=0;
 			for(int i=0; i<n; ++i) if (used[i]!=a) t += conn[i], na=1;
 			if (!na) break;
-			if (t < 2 - EPS) {
+			if (t < 2 - EPS && 2-t > strongestCut) {
+				strongestCut = 2-t;
 				cols.clear();
 				for(int i=0; i<n; ++i) if (used[i]==a)
 					for(int j=0; j<n; ++j) if (used[j]!=a)
 						cols.push_back(varnum(i,j));
 //				cout<<"addining cut "<<cols.size()<<' '<<t<<' '<<a<<' '<<n<<'\n';
 //				for(int i=0; i<n; ++i) cout<<used[i]<<' '; cout<<'\n';
-				lp.addCut(cols.size(), &cols[0], &row[0], 2);
-				break;
 			}
 		}
+		if (strongestCut > 0)
+			lp.addCut(cols.size(), &cols[0], &row[0], 2);
 	}
 //	cout<<"addeded "<<added<<" cuts\n";
 	return added;
