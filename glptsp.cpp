@@ -87,6 +87,14 @@ double GLPTSP::calc()
 	double r=0;
 	if (relaxationOnly) r = relaxation(M);
 	else r = branchAndCut(M);
+
+#if 0
+	for(size_t i=0; i<arows.size(); ) {
+		int a = arows[i];
+		if (glp_get_row_stat(lp, a)==GLP_BS) arows[i]=arows.back(), arows.pop_back();
+		else ++i;
+	}
+#endif
 	if (!arows.empty()) glp_del_rows(lp, arows.size(), &arows[0]-1);
 	return r;
 }

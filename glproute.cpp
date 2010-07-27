@@ -7,6 +7,7 @@
 #include <cmath>
 #include <iomanip>
 #include "tspCost.hpp"
+#include "util.hpp"
 using namespace std;
 
 extern vector<vector<double> > edgeDist;
@@ -107,7 +108,7 @@ void dumpGraph(int p=0)
 vector<int> used;
 vector<double> csums;
 vector<int> found;
-int addSubtoursSingle(int p)
+int addSubtoursSingle(int p, bool weakCuts=0)
 {
 	used.clear();
 	used.resize(N, -1);
@@ -132,6 +133,9 @@ int addSubtoursSingle(int p)
 
 //		if (p==0 && s>1) cout<<"Trying to find main path subtour "<<s<<'\n';
 
+		int rownum = -1;
+		double maxViol = -1;
+
 		priority_queue<DP> q;
 		q.push(DP(0,s));
 		double csum=0;
@@ -147,9 +151,8 @@ int addSubtoursSingle(int p)
 			cur.push_back(n);
 
 			used[n] = s;
-			if (p==0 && s==0 && n==1) break;
-			if (p>0 && (n==0 || n==1)) break;
-//			if (p==0) cout<<"lol "<<s<<' '<<n<<' '<<csum<<' '<<isum<<' '<<pp.first<<'\n';
+			if (n!=s && (n==0 || n==1)) break;
+//			if (p==0 && s==0) cout<<"lol "<<s<<' '<<n<<' '<<csum<<' '<<isum<<' '<<pp.first<<'\n';
 			for(size_t j=0; j<enums[n].size(); ++j) {
 				int e = enums[n][j];
 				int t = otherNode(e, n);
@@ -163,38 +166,16 @@ int addSubtoursSingle(int p)
 				else csums[t] += v;
 				csum += v;
 //				cout<<"adding to csum "<<s<<' '<<csum<<' '<<vals[E*p+e]<<' '<<vals[e]<<'\n';
-//				if (csums[t] > .01) {
-				if (csums[t] > 0) {
+				if (csums[t] > EPS) {
+//				if (csums[t] > 0) {
 					q.push(DP(csums[t], t));
 //					cout<<"pushing "<<t<<' '<<csums[t]<<'\n';
 				}
 			}
 
-//			if (p==0 && s>1) cout<<" asd "<<n<<" : "<<csum<<' '<<isum<<'\n';
-#if 0
-			{
-				double is=0, os=0;
-				for(size_t j=0; j<cur.size(); ++j) {
-					int m = cur[j];
-					for(size_t k=0; k<enums[m].size(); ++k) {
-						int e = enums[m][k];
-						int t = otherNode(e, m);
-						double v = p==0 ? vals[e] : vals[e] + vals[e + p*E];
-						if (used[t]!=s) os += v;
-						else if (t<m) is += v;
-					}
-				}
-				if (fabs(is-isum)>1e-4 || fabs(os-csum)>1e-4) {
-					cout<<p<<' '<<s<<' '<<cur.size()<<' '<<is<<' '<<isum<<' '<<os<<' '<<csum<<'\n';
-					dumpGraph(p);
-				}
-				assert(fabs(is-isum) < 1e-4);
-				assert(fabs(os-csum) < 1e-4);
-			}
-#endif
-
 			if ((p>0 && csum < 2 - EPS) || (p==0 && i<2 && csum < 1-EPS)) {
 				int z=0;
+				if (p==0) cout<<"adding start/end constr "<<csum<<' '<<isum<<'\n';
 //				for(size_t k=0; k<cur.size(); ++k) used[cur[k]]=found[cur[k]]=s;
 				for(size_t k=0; k<cur.size(); ++k) {
 					int m = cur[k];
@@ -203,7 +184,7 @@ int addSubtoursSingle(int p)
 						int e = enums[m][l];
 						int t = otherNode(e, m);
 //						cout<<"other: "<<t<<' '<<s<<' '<<found[t]<<'\n';
-						if (used[t]>=0 && found[t]==s) continue;
+						if (used[t]==s) continue;
 						if (p>0) {
 							cols[++z] = E*p + e;
 							row[z] = 1;
@@ -218,30 +199,43 @@ int addSubtoursSingle(int p)
 #endif
 //				assert(z);
 				if (!z) break;
-				int r = glp_add_rows(lp, 1);
-				glp_set_row_bnds(lp, r, GLP_LO, p==0 ? 1 : 2, 0);
-				glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
-				++added;
-			} else if (p==0 && s>1 && 2*isum > (cur.size()-1)*csum + EPS) {
-#if 0
+				double viol = (p==0 ? 1 : 2) - csum;
+				if (viol > maxViol) {
+					maxViol = viol;
+					if (rownum < 0) {
+						rownum = glp_add_rows(lp, 1);
+						++added;
+					}
+					glp_set_row_bnds(lp, rownum, GLP_LO, p==0 ? 1 : 2, 0);
+					glp_set_mat_row(lp, rownum, z, &cols[0], &row[0]);
+				}
+			} else if (weakCuts && p==0 && s>1 && isum > (cur.size()-1)*csum + EPS) {
+#if 1
 				int z=0;
 				for(size_t k=0; k<cur.size(); ++k) {
 					int m = cur[k];
+//					cout<<"conn from "<<m<<": "<<enums[m].size()<<'\n';
 					for(size_t l=0; l<enums[m].size(); ++l) {
 						int e = enums[m][l];
 						int t = otherNode(e, m);
-//						cout<<"other: "<<t<<' '<<s<<' '<<found[t]<<'\n';
-						if (used[t]>=0 && found[t]==s && t<m) continue;
+						if (used[t]==s && t<m) continue;
 						cols[++z] = e;
-						row[z] = found[t]==s ? -2 : cur.size()-1;
+						row[z] = used[t]==s ? -1 : (int)cur.size()-1;
+//						cout<<"edge "<<m<<' '<<t<<' '<<vals[e]<<' '<<used[t]<<' '<<found[t]<<" ; "<<row[z]<<'\n';
 					}
 				}
-				cout<<"adding main path subtour cut "<<s<<' '<<cur.size()<<' '<<csum<<' '<<isum<<' '<<z<<'\n';
+//				cout<<"adding main path subtour cut "<<s<<' '<<cur.size()<<' '<<csum<<' '<<isum<<' '<<z<<' '<<cur<<'\n';
 
-				int r = glp_add_rows(lp, 1);
-				glp_set_row_bnds(lp, r, GLP_LO, 0, 0);
-				glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
-				++added;
+				double viol = isum - (cur.size()-1)*csum;
+				if (viol > maxViol) {
+					maxViol = viol;
+					if (rownum < 0) {
+						rownum = glp_add_rows(lp, 1);
+						++added;
+					}
+					glp_set_row_bnds(lp, rownum, GLP_LO, 0, 0);
+					glp_set_mat_row(lp, rownum, z, &cols[0], &row[0]);
+				}
 #endif
 			}
 		}
@@ -256,6 +250,7 @@ int addSubtourConstraints()
 	for(int i=0; i<=K; ++i) {
 		added += addSubtoursSingle(i);
 	}
+	if (!added) added = addSubtoursSingle(0, 1);
 	return added;
 }
 
@@ -303,7 +298,7 @@ double routeLP(const vector<double>& probs)
 	glp_set_obj_dir(lp, GLP_MIN);
 	for(int i=1; i<=E; ++i) {
 		glp_set_obj_coef(lp, i, edists[i] * LENGTH_FACTOR);
-		cout<<"lol "<<edges[i].first<<' '<<edges[i].second<<' '<<edists[i] * LENGTH_FACTOR<<'\n';
+//		cout<<"lol "<<edges[i].first<<' '<<edges[i].second<<' '<<edists[i] * LENGTH_FACTOR<<'\n';
 	}
 	if (robustOpt) {
 		glp_set_col_bnds(lp, 1+vs, GLP_LO, 0, 0);
@@ -389,7 +384,7 @@ double routeLP(const vector<double>& probs)
 			vals[i] = glp_get_col_prim(lp, i);
 	} while(addConstraints());
 
-	dumpGraph(1);
+	dumpGraph(0);
 
 	double res = glp_get_obj_val(lp);
 
