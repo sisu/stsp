@@ -15,6 +15,7 @@ extern vector<vector<int> > conn;
 extern vector<vector<int> > purchases;
 extern bool robustOpt;
 extern bool singleDir;
+extern bool singleDirAll;
 
 namespace {
 
@@ -34,27 +35,32 @@ const double EPS = 1e-6;
 
 int addDegreeConstraints()
 {
+	if (!singleDir) return 0;
 	int added=0;
-	for(int i=0; i<=0; ++i) {
+	int end = singleDirAll ? K : 0;
+	for(int i=0; i<=end; ++i) {
 		for(int j=2; j<N; ++j) {
 			double sum=0;
 			for(size_t k=0; k<enums[j].size(); ++k) {
 				int e = enums[j][k];
 				sum += vals[e] + (i>0 ? vals[E*i + e] : 0);
 			}
-			if (singleDir && sum > 2+EPS) {
+			if (sum > 2+EPS) {
 				int z=0;
 				for(size_t l=0; l<enums[j].size(); ++l) {
 					int n = enums[j][l];
 					cols[++z] = n;
 					row[z] = 1;
+					if (i>0) {
+						cols[++z] = E*i+n;
+						row[z] = 1;
+					}
 				}
 				int r = glp_add_rows(lp, 1);
 				glp_set_row_bnds(lp, r, GLP_UP, 0, 2);
 				glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
 				++added;
 			}
-			if (!singleDir) continue;
 			for(size_t k=0; k<enums[j].size(); ++k) {
 				double x = vals[E*i + enums[j][k]];
 				double xx = vals[enums[j][k]];
@@ -77,6 +83,7 @@ int addDegreeConstraints()
 					glp_set_row_bnds(lp, r, GLP_LO, 0, 0);
 					glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
 					++added;
+//					cout<<"adding deg constr "<<i<<' '<<j<<' '<<z<<' '<<k<<' '<<sum<<'\n';
 				}
 			}
 		}
@@ -288,7 +295,9 @@ double routeLP(const vector<double>& probs)
 	int vs = E*(K+1);
 	glp_add_cols(lp, vs + robustOpt);
 	for(int i=1; i<=vs; ++i) {
-		glp_set_col_bnds(lp, i, GLP_DB, 0, singleDir && i<=E ? 1 : 2);
+		int up = 2;
+		if ((singleDir && i<=E) || singleDirAll) up=1;
+		glp_set_col_bnds(lp, i, GLP_DB, 0, up);
 	}
 
 	cols.resize(vs+1);
@@ -373,6 +382,7 @@ double routeLP(const vector<double>& probs)
 		int r = glp_simplex(lp, &parm);
 		if (r || glp_get_status(lp)!=GLP_OPT) {
 			cout<<"FAILED SOLVING ROUTE RELAXATION: "<<r<<' '<<glp_get_status(lp)<<'\n';
+			dumpGraph(0);
 			abort();
 		}
 		parm.meth = GLP_DUAL;

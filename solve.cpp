@@ -20,6 +20,7 @@ double antColony(double(*)(const vector<int>&), double time);
 
 bool robustOpt = 0;
 bool singleDir = 0;
+bool singleDirAll = 0;
 
 vector<vector<int> > conn;
 int startI, endI;
@@ -158,6 +159,7 @@ int main(int argc, char* argv[])
 				case 'r': robustOpt=1; break;
 				case 't': maxt = atof(argv[++i]); break;
 				case 's': singleDir=1; break;
+				case 'S': singleDir=singleDirAll=1; break;
 			}
 		} else if (!mapfile) mapfile = a;
 		else if (!dbfile) dbfile = a;
