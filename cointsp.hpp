@@ -2,8 +2,12 @@
 #define COINTSP_HPP
 
 #include "ClpSimplex.hpp"
+#include "lp.hpp"
+#include <vector>
 
 struct CoinTSP : LP {
+	CoinTSP();
+	~CoinTSP();
 	void init();
 	void reset();
 	double calc();
@@ -13,6 +17,11 @@ struct CoinTSP : LP {
 
 private:
 	ClpSimplex lp;
+
+	double relaxation();
+	int* cols;
+	double* row;
+	std::vector<int> arows;
 };
 
 #endif

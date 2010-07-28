@@ -6,5 +6,6 @@
 int varnum(int a, int b);
 void makeDegreeConstraint(int* res, int k, int n);
 int genSubtours(int n, double* g, LP& lp);
+extern bool oneBased;
 
 #endif

@@ -6,6 +6,7 @@
 #include "ctsp.hpp"
 #include "glptsp.hpp"
 #include "tspCost.hpp"
+#include "cointsp.hpp"
 using namespace std;
 
 extern vector<vector<double> > dist;
@@ -16,6 +17,7 @@ extern bool robustOpt;
 //typedef ConcordeTSP TSP;
 //typedef CustomTSP TSP;
 typedef GLPTSP TSP;
+//typedef CoinTSP TSP;
 
 namespace {
 

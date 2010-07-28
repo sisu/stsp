@@ -9,6 +9,7 @@ GLPTSP::GLPTSP()
 	lp = 0;
 	relaxationOnly = 1;
 	first = 0;
+	oneBased=1;
 }
 
 GLPTSP::~GLPTSP()

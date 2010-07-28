@@ -4,10 +4,11 @@
 #include "lp.hpp"
 using namespace std;
 
+bool oneBased;
 int varnum(int a, int b)
 {
 	if (a<b) swap(a,b);
-	return a*(a-1)/2 + b + 1;
+	return a*(a-1)/2 + b + oneBased;
 }
 
 void makeDegreeConstraint(int* res, int k, int n)
