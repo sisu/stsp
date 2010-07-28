@@ -8,6 +8,7 @@
 #include <iomanip>
 #include "tspCost.hpp"
 #include "util.hpp"
+#include "mincut.hpp"
 using namespace std;
 
 extern vector<vector<double> > edgeDist;
@@ -260,11 +261,50 @@ int addSubtourConstraints()
 	if (!added) added = addSubtoursSingle(0, 1);
 	return added;
 }
+int addExactSubtours()
+{
+	vector<int> res;
+	double mc = minCutFromTo(0, 1, enums, edges, vals, res);
+	cout<<"mincut: "<<mc<<'\n';
+	if (mc < 1-EPS) {
+		used.clear();
+		used.resize(N, 0);
+		for(size_t i=0; i<res.size(); ++i)
+			used[res[i]] = 1;
+
+		double csum=0;
+		int z=0;
+		for(size_t i=0; i<res.size(); ++i) {
+			int n = res[i];
+			for(size_t j=0; j<enums[n].size(); ++j) {
+				int e = enums[n][j];
+				int t = otherNode(e, n);
+				if (used[t]) continue;
+				cols[++z] = e;
+				row[z] = 1;
+				csum += vals[e];
+			}
+		}
+		if (csum>=1) {
+			dumpGraph(0);
+			cout<<res<<'\n';
+		}
+		cout<<"csum: "<<csum<<'\n';
+		assert(csum < 1);
+
+		int r = glp_add_rows(lp, 1);
+		glp_set_row_bnds(lp, r, GLP_LO, 1, 0);
+		glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
+		return 1;
+	}
+	return 0;
+}
 
 bool addConstraints()
 {
 	if (addDegreeConstraints()) return 1;
 	if (addSubtourConstraints()) return 1;
+	if (addExactSubtours()) return 1;
 	return 0;
 }
 

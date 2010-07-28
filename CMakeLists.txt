@@ -33,6 +33,8 @@ link_libraries(glpk)
 set(coin_dir "/usr/include/coin")
 #include_directories("${coin_dir}")
 #link_libraries(Clp)
-add_executable(solve solve.cpp tspCost.cpp colony.cpp concorde.cpp ctsp.cpp cut.cpp glptsp.cpp glproute.cpp
+add_executable(solve solve.cpp tspCost.cpp colony.cpp
+		concorde.cpp ctsp.cpp cut.cpp glptsp.cpp glproute.cpp
 #		cointsp.cpp
+		mincut.cpp
 		)
