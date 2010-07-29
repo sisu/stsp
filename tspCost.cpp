@@ -6,7 +6,7 @@
 #include "ctsp.hpp"
 #include "glptsp.hpp"
 #include "tspCost.hpp"
-#include "cointsp.hpp"
+//#include "cointsp.hpp"
 using namespace std;
 
 extern vector<vector<double> > dist;
