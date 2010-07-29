@@ -26,31 +26,32 @@ double randf()
 	return rand()/(double)RAND_MAX;
 }
 
-bool dfs(int s, int t, vector<int>& out, int from)
+bool dfs(int s, int t, vector<int>& out)
 {
 	if (s==t) {
 		out.push_back(s);
 		return 1;
 	}
 //	cout<<"writing to "<<s<<'\n';
+	int limit = 2-singleDir;
 	++used[s];
 	double p=0;
 	for(size_t i=0; i<conn[s].size(); ++i) {
 		int t = conn[s][i];
-		if (!used[t] || (!singleDir && used[t]==1 && conn[s][i]==from))
+		if (used[t]<limit)
 			p += probab[s][i];
 	}
 	double r = randf() * p;
 	for(size_t i=0; i<conn[s].size(); ++i) {
 		int x = conn[s][i];
-		if (used[x] && (singleDir || used[x]>1 || conn[s][i]!=from)) continue;
+		if (used[x]>=limit) continue;
 		r -= probab[s][i];
 		if (r>0) continue;
-		if (dfs(x, t, out, s)) {
+		if (dfs(x, t, out)) {
 			out.push_back(s);
 			return 1;
 		} else {
-			return dfs(s,t,out,from);
+			return dfs(s,t,out);
 		}
 	}
 	return 0;
@@ -99,7 +100,7 @@ double antColony(double(*cost)(const vector<int>&), double maxtime)
 			fill(used.begin(),used.end(),0);
 			vector<int>& path = tmpv[i];
 			path.clear();
-			dfs(startI, endI, path, -1);
+			dfs(startI, endI, path);
 			reverse(path.begin(),path.end());
 
 //			cout<<"lol path "<<path<<'\n';

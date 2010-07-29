@@ -191,7 +191,6 @@ int addSubtoursSingle(int p, bool weakCuts=0)
 
 					int z=0;
 					if (p==0) cout<<"adding start/end constr "<<csum<<' '<<isum<<'\n';
-	//				for(size_t k=0; k<cur.size(); ++k) used[cur[k]]=found[cur[k]]=s;
 					for(size_t k=0; k<cur.size(); ++k) {
 						int m = cur[k];
 	//					cout<<"adding vars: "<<m<<' '<<enums[m].size()<<'\n';
@@ -208,6 +207,7 @@ int addSubtoursSingle(int p, bool weakCuts=0)
 							row[z] = 1;
 						}
 					}
+					for(size_t k=0; k<cur.size(); ++k) assert(used[cur[k]]==s);
 					assert(p==0 || z);
 					if (!z) break;
 
@@ -218,7 +218,7 @@ int addSubtoursSingle(int p, bool weakCuts=0)
 					glp_set_row_bnds(lp, rownum, GLP_LO, p==0 ? 1 : 2, 0);
 					glp_set_mat_row(lp, rownum, z, &cols[0], &row[0]);
 				}
-			} else if (weakCuts && p==0 && s>1 && isum > (cur.size()-1)*csum + EPS) {
+			} else if (weakCuts && p==0 && s>1 && 2*isum > (cur.size()-1)*csum + EPS) {
 #if 1
 				int z=0;
 				for(size_t k=0; k<cur.size(); ++k) {
@@ -229,7 +229,7 @@ int addSubtoursSingle(int p, bool weakCuts=0)
 						int t = otherNode(e, m);
 						if (used[t]==s && t<m) continue;
 						cols[++z] = e;
-						row[z] = used[t]==s ? -1 : (int)cur.size()-1;
+						row[z] = used[t]==s ? -2 : (int)cur.size()-1;
 //						cout<<"edge "<<m<<' '<<t<<' '<<vals[e]<<' '<<used[t]<<' '<<found[t]<<" ; "<<row[z]<<'\n';
 					}
 				}
@@ -256,10 +256,10 @@ int addSubtoursSingle(int p, bool weakCuts=0)
 int addSubtourConstraints()
 {
 	int added = 0;
-	for(int i=1; i<=K; ++i) {
+	for(int i=0; i<=K; ++i) {
 		added += addSubtoursSingle(i);
 	}
-//	if (!added) added = addSubtoursSingle(0, 1);
+	if (!added) added = addSubtoursSingle(0, 1);
 	return added;
 }
 int genSubtourFrom(const vector<int>& res, int p=0)
@@ -356,9 +356,9 @@ int addItemSubtours()
 bool addConstraints()
 {
 	if (addDegreeConstraints()) return 1;
-	if (addSubtourConstraints()) return 1;
 	if (addExactSubtours()) return 1;
 	if (addItemSubtours()) return 1;
+	if (addSubtourConstraints()) return 1;
 	return 0;
 }
 
@@ -439,7 +439,8 @@ double routeLP(const vector<double>& probs)
 				row[1+k] = 1;
 //				cout<<"v "<<i<<' '<<k<<' '<<enums[i][k]<<'\n';
 			}
-			glp_set_row_bnds(lp, r, GLP_FX, 1, 1);
+			if (singleDir) glp_set_row_bnds(lp, r, GLP_FX, 1, 1);
+			else glp_set_row_bnds(lp, r, GLP_LO, 1, 0);
 			glp_set_mat_row(lp, r, enums[i].size(), &cols[0], &row[0]);
 		}
 	}
@@ -458,7 +459,8 @@ double routeLP(const vector<double>& probs)
 				cols[++z] = enums[t][k] + E*(1+i);
 				row[z] = 1;
 			}
-			glp_set_row_bnds(lp, r, GLP_LO, 2, 0);
+			if (singleDirAll) glp_set_row_bnds(lp, r, GLP_FX, 2, 2);
+			else glp_set_row_bnds(lp, r, GLP_LO, 2, 0);
 			glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
 		}
 	}
@@ -488,6 +490,7 @@ double routeLP(const vector<double>& probs)
 
 		for(int i=1; i<=vs; ++i)
 			vals[i] = glp_get_col_prim(lp, i);
+//		dumpGraph(0);
 	} while(addConstraints());
 
 	dumpGraph(0);

@@ -37,6 +37,7 @@ double expectedTotalCost(const ivec& path)
 //		r += dist[path[i-1]][path[i]];
 		int a = path[i-1], b = path[i];
 		int n = lower_bound(conn[a].begin(),conn[a].end(),b)-conn[a].begin();
+		assert(conn[a][n]==b);
 		r += edgeDist[a][n];
 //		if (final) cout<<"lol "<<a<<' '<<b<<' '<<n<<' '<<edgeDist[a][n]<<'\n';
 	}
