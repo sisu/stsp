@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cmath>
 #include <iomanip>
+#include <algorithm>
 #include "tspCost.hpp"
 #include "util.hpp"
 #include "mincut.hpp"
@@ -104,10 +105,12 @@ void dumpGraph(int p=0)
 	int pp = cout.precision();
 	for(int i=1; i<=E; ++i) {
 		double v = vals[p*E + i];
-		if (p) v+=vals[i];
-		if (v<EPS) continue;
-		P p = edges[i];
-		cout<<p.first<<' '<<p.second<<" "<<setprecision(3)<<v<<'\n';
+		double w = vals[i];
+		if (v<EPS && w<EPS) continue;
+		P q = edges[i];
+		cout<<q.first<<' '<<q.second<<" "<<setprecision(3)<<w;
+		if (p>0) cout<<' '<<v;
+		cout<<'\n';
 	}
 //	cout<<resetiosflags(ios_base::precision);
 	cout.precision(pp);
@@ -157,8 +160,8 @@ int addSubtoursSingle(int p, bool weakCuts=0)
 			csum -= pp.first;
 			isum += pp.first;
 			cur.push_back(n);
-
 			used[n] = s;
+
 			if (n!=s && (n==0 || n==1)) break;
 //			if (p==0 && s==0) cout<<"lol "<<s<<' '<<n<<' '<<csum<<' '<<isum<<' '<<pp.first<<'\n';
 			for(size_t j=0; j<enums[n].size(); ++j) {
@@ -182,34 +185,32 @@ int addSubtoursSingle(int p, bool weakCuts=0)
 			}
 
 			if ((p>0 && csum < 2 - EPS) || (p==0 && i<2 && csum < 1-EPS)) {
-				int z=0;
-				if (p==0) cout<<"adding start/end constr "<<csum<<' '<<isum<<'\n';
-//				for(size_t k=0; k<cur.size(); ++k) used[cur[k]]=found[cur[k]]=s;
-				for(size_t k=0; k<cur.size(); ++k) {
-					int m = cur[k];
-//					cout<<"adding vars: "<<m<<' '<<enums[m].size()<<'\n';
-					for(size_t l=0; l<enums[m].size(); ++l) {
-						int e = enums[m][l];
-						int t = otherNode(e, m);
-//						cout<<"other: "<<t<<' '<<s<<' '<<found[t]<<'\n';
-						if (used[t]==s) continue;
-						if (p>0) {
-							cols[++z] = E*p + e;
-							row[z] = 1;
-						}
-						cols[++z] = e;
-						row[z] = 1;
-					}
-				}
-#if 0
-				cout<<" adding subtour cut "<<p<<' '<<cur.size()<<' '<<s<<' '<<z<<' '<<csum<<'\n';
-				for(size_t i=0; i<cur.size(); ++i) cout<<cur[i]<<' ';cout<<'\n';
-#endif
-//				assert(z);
-				if (!z) break;
 				double viol = (p==0 ? 1 : 2) - csum;
 				if (viol > maxViol) {
 					maxViol = viol;
+
+					int z=0;
+					if (p==0) cout<<"adding start/end constr "<<csum<<' '<<isum<<'\n';
+	//				for(size_t k=0; k<cur.size(); ++k) used[cur[k]]=found[cur[k]]=s;
+					for(size_t k=0; k<cur.size(); ++k) {
+						int m = cur[k];
+	//					cout<<"adding vars: "<<m<<' '<<enums[m].size()<<'\n';
+						for(size_t l=0; l<enums[m].size(); ++l) {
+							int e = enums[m][l];
+							int t = otherNode(e, m);
+	//						cout<<"other: "<<t<<' '<<s<<' '<<found[t]<<'\n';
+							if (used[t]==s) continue;
+							if (p>0) {
+								cols[++z] = E*p + e;
+								row[z] = 1;
+							}
+							cols[++z] = e;
+							row[z] = 1;
+						}
+					}
+					assert(p==0 || z);
+					if (!z) break;
+
 					if (rownum < 0) {
 						rownum = glp_add_rows(lp, 1);
 						++added;
@@ -255,11 +256,35 @@ int addSubtoursSingle(int p, bool weakCuts=0)
 int addSubtourConstraints()
 {
 	int added = 0;
-	for(int i=0; i<=K; ++i) {
+	for(int i=1; i<=K; ++i) {
 		added += addSubtoursSingle(i);
 	}
-	if (!added) added = addSubtoursSingle(0, 1);
+//	if (!added) added = addSubtoursSingle(0, 1);
 	return added;
+}
+int genSubtourFrom(const vector<int>& res, int p=0)
+{
+	used.clear();
+	used.resize(N, 0);
+	for(size_t i=0; i<res.size(); ++i)
+		used[res[i]] = 1;
+
+	int z=0;
+	for(size_t i=0; i<res.size(); ++i) {
+		int n = res[i];
+		for(size_t j=0; j<enums[n].size(); ++j) {
+			int e = enums[n][j];
+			int t = otherNode(e, n);
+			if (used[t]) continue;
+			cols[++z] = e;
+			row[z] = 1;
+			if (p>0) {
+				cols[++z] = E*p+e;
+				row[z] = 1;
+			}
+		}
+	}
+	return z;
 }
 int addExactSubtours()
 {
@@ -267,31 +292,8 @@ int addExactSubtours()
 	double mc = minCutFromTo(0, 1, enums, edges, vals, res);
 	cout<<"mincut: "<<mc<<'\n';
 	if (mc < 1-EPS) {
-		used.clear();
-		used.resize(N, 0);
-		for(size_t i=0; i<res.size(); ++i)
-			used[res[i]] = 1;
-
-		double csum=0;
-		int z=0;
-		for(size_t i=0; i<res.size(); ++i) {
-			int n = res[i];
-			for(size_t j=0; j<enums[n].size(); ++j) {
-				int e = enums[n][j];
-				int t = otherNode(e, n);
-				if (used[t]) continue;
-				cols[++z] = e;
-				row[z] = 1;
-				csum += vals[e];
-			}
-		}
-		if (csum>=1) {
-			dumpGraph(0);
-			cout<<res<<'\n';
-		}
-		cout<<"csum: "<<csum<<'\n';
-		assert(csum < 1);
-
+		assert(find(res.begin(), res.end(), 1) == res.end());
+		int z = genSubtourFrom(res);
 		int r = glp_add_rows(lp, 1);
 		glp_set_row_bnds(lp, r, GLP_LO, 1, 0);
 		glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
@@ -300,11 +302,63 @@ int addExactSubtours()
 	return 0;
 }
 
+typedef pair<int,double> IDP;
+vector<vector<IDP> > dgraph;
+int addItemSubtours()
+{
+	if (dgraph.empty()) {
+		dgraph.resize(N);
+		for(int i=0; i<N; ++i) {
+			dgraph[i].resize(enums[i].size());
+			for(size_t j=0; j<enums[i].size(); ++j)
+				dgraph[i][j] = IDP(otherNode(enums[i][j], i), 0);
+		}
+	}
+	vector<int> res;
+	int added = 0;
+	for(int i=1; i<=K; ++i) {
+		for(int j=0; j<N; ++j) {
+			dgraph[j].resize(enums[j].size());
+			for(size_t k=0; k<enums[j].size(); ++k) {
+				int e = enums[j][k];
+				dgraph[j][k].second = vals[e] + vals[e + E*i];
+			}
+		}
+		res.clear();
+		double mc = minCutFrom(0, 1, purchases[i-1], dgraph, res);
+		cout<<"mincut for "<<i<<": "<<mc<<'\n';
+		if (mc < 2-EPS) {
+			int z = genSubtourFrom(res, i);
+#if 1
+			cout<<"adding cut: "<<z<<'\n';
+			double sum=0;
+			for(int j=1; j<=z; ++j) sum += vals[cols[j]];
+			cout<<"sum: "<<sum<<'\n';
+			assert(sum < 2-EPS);
+			assert(fabs(sum-mc) < 1e-4);
+
+			size_t covered=0;
+			for(size_t j=0; j<res.size(); ++j) covered += binary_search(purchases[i-1].begin(), purchases[i-1].end(), res[j]);
+			cout<<"covered: "<<covered<<'/'<<purchases[i-1].size()<<'\n';
+			assert(covered < purchases[i-1].size());
+			assert(find(res.begin(),res.end(),0)!=res.end());
+			assert(find(res.begin(),res.end(),1)!=res.end());
+#endif
+			int r = glp_add_rows(lp, 1);
+			glp_set_row_bnds(lp, r, GLP_LO, 2, 0);
+			glp_set_mat_row(lp, r, z, &cols[0], &row[0]);
+			++added;
+		}
+	}
+	return added;
+}
+
 bool addConstraints()
 {
 	if (addDegreeConstraints()) return 1;
 	if (addSubtourConstraints()) return 1;
 	if (addExactSubtours()) return 1;
+	if (addItemSubtours()) return 1;
 	return 0;
 }
 
@@ -416,6 +470,8 @@ double routeLP(const vector<double>& probs)
 	parm.meth = GLP_PRIMAL;
 	parm.presolve = 1;
 	parm.msg_lev = GLP_MSG_ERR;
+
+//	cout<<"items: "<<purchases<<'\n';
 
 	vals.resize(1 + vs);
 	do {

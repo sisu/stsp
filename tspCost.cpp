@@ -72,8 +72,7 @@ double expectedTotalCost(const ivec& path)
 
 		if (final) cout<<"tsp cost "<<k<<": "<<cr<<'\n';
 	}
-	r += rr;
-	return r;
+	return r + rr;
 }
 
 double exactTotalCost(const ivec& path)

@@ -62,6 +62,7 @@ void readDB(istream& in)
 				v.push_back(x);
 		}
 		if (v.empty()) continue;
+		sort(v.begin(), v.end());
 		purchases.push_back(v);
 	}
 }
