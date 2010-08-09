@@ -21,7 +21,7 @@ class clithread(Thread):
 			s += dat
 
 		print s
-		p = subprocess.Popen(['./solve', 't3-2.gr'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+		p = subprocess.Popen(['./solve', 't3-2.gr', '-s'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 #		p = subprocess.Popen(['cat'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 		p.stdin.write(s)
 		p.stdin.close()

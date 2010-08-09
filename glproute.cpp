@@ -259,7 +259,7 @@ int addSubtourConstraints()
 	for(int i=0; i<=K; ++i) {
 		added += addSubtoursSingle(i);
 	}
-	if (!added) added = addSubtoursSingle(0, 1);
+//	if (!added) added = addSubtoursSingle(0, 1);
 	return added;
 }
 int genSubtourFrom(const vector<int>& res, int p=0)
@@ -329,7 +329,7 @@ int addItemSubtours()
 		cout<<"mincut for "<<i<<": "<<mc<<'\n';
 		if (mc < 2-EPS) {
 			int z = genSubtourFrom(res, i);
-#if 1
+#if 0
 			cout<<"adding cut: "<<z<<'\n';
 			double sum=0;
 			for(int j=1; j<=z; ++j) sum += vals[cols[j]];
@@ -356,9 +356,9 @@ int addItemSubtours()
 bool addConstraints()
 {
 	if (addDegreeConstraints()) return 1;
+	if (addSubtourConstraints()) return 1;
 	if (addExactSubtours()) return 1;
 	if (addItemSubtours()) return 1;
-	if (addSubtourConstraints()) return 1;
 	return 0;
 }
 
